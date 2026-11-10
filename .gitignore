@@ -1,0 +1,21 @@
+# Build outputs
+build/
+.gradle/
+out/
+node_modules/
+.next/
+*.tsbuildinfo
+next-env.d.ts
+
+# IDE / OS
+.idea/
+.vscode/
+*.iml
+.DS_Store
+
+# Local env & data — never commit secrets or case material
+.env
+.env.*
+!.env.example
+/data/
+*.pdf

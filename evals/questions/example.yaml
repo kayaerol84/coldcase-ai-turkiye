@@ -1,0 +1,13 @@
+# Template — page references must be verified against the ingested PDF before use.
+id: phone-records-001
+question: "Telefon kayıtlarının elde edilememesi hakkında tutanaklarda ne söyleniyor?"
+expected_sources:
+  - document: "TBMM Uğur Mumcu Araştırma Komisyonu Cilt 2"
+    printed_pages: ["1426", "1427"]
+    pdf_pages: []          # fill in after ingestion
+expected_answer_points:
+  - "Committee members discuss that the phone records did not reach the committee/file."
+known_limitations:
+  - "Original request and response correspondence is not verified in the corpus."
+abstention_acceptable: false
+status: DRAFT_UNVERIFIED

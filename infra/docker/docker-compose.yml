@@ -1,0 +1,37 @@
+# Local development stack. Not for production use.
+name: coldcase
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_DB: coldcase
+      POSTGRES_USER: coldcase
+      POSTGRES_PASSWORD: coldcase
+    ports: ["5432:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U coldcase"]
+      interval: 5s
+      retries: 10
+
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: coldcase
+      MINIO_ROOT_PASSWORD: coldcase-dev-secret
+    ports: ["9000:9000", "9001:9001"]
+    volumes: [miniodata:/data]
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.3
+    command: start-dev --import-realm --http-port 8180
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    ports: ["8180:8180"]
+    volumes: ["./keycloak:/opt/keycloak/data/import:ro"]
+
+volumes:
+  pgdata:
+  miniodata:

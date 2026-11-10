@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: coldcase-api
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/coldcase}
+    username: ${DB_USER:coldcase}
+    password: ${DB_PASSWORD:coldcase}
+  flyway:
+    enabled: true
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8180/realms/coldcase}
+  jackson:
+    default-property-inclusion: non_null
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+
+springdoc:
+  api-docs:
+    path: /api/openapi
