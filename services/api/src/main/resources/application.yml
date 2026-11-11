@@ -24,3 +24,7 @@ management:
 springdoc:
   api-docs:
     path: /api/openapi
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}

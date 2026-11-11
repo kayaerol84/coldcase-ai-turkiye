@@ -92,7 +92,7 @@ class CaseService(
     fun setMember(actor: AppUser, caseId: UUID, email: String, role: CaseRole): MemberRecord {
         access.require(caseId, actor.id, Permission.MEMBERS_MANAGE)
         val userId = repo.findUserIdByEmail(email)
-            ?: throw BadRequestException("No user with that email has signed in yet")
+            ?: throw BadRequestException("USER_NOT_FOUND", "No user with that email has signed in yet")
         if (userId == actor.id && role != CaseRole.CASE_ADMIN) ensureAnotherAdmin(caseId)
         val previous = access.roleOf(caseId, userId)
         repo.upsertMember(caseId, userId, role, actor.id)
@@ -113,10 +113,10 @@ class CaseService(
     }
 
     private fun ensureAnotherAdmin(caseId: UUID) {
-        if (repo.countAdmins(caseId) <= 1) throw BadRequestException("A case must keep at least one Case Admin")
+        if (repo.countAdmins(caseId) <= 1) throw BadRequestException("LAST_CASE_ADMIN", "A case must keep at least one Case Admin")
     }
 
     private fun validatePeriod(start: LocalDate?, end: LocalDate?) {
-        if (start != null && end != null && end.isBefore(start)) throw BadRequestException("periodEnd is before periodStart")
+        if (start != null && end != null && end.isBefore(start)) throw BadRequestException("INVALID_PERIOD", "periodEnd is before periodStart")
     }
 }

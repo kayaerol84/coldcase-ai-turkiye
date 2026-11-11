@@ -15,6 +15,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
+import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.util.UUID
@@ -108,7 +109,9 @@ class CaseApiTest {
         val owner = TestUser()
         val id = createCase(owner)
         val ownerId = jdbc.sql("SELECT id FROM users WHERE oidc_subject = :s").param("s", owner.sub).query(UUID::class.java).single()
-        mvc.perform(delete("/api/v1/cases/$id/members/$ownerId").asUser(owner)).andExpect(status().isBadRequest)
+        mvc.perform(delete("/api/v1/cases/$id/members/$ownerId").asUser(owner))
+            .andExpect(status().isBadRequest)
+            .andExpect(jsonPath("$.code").value("LAST_CASE_ADMIN"))
         mvc.perform(
             put("/api/v1/cases/$id/members").asUser(owner).contentType(MediaType.APPLICATION_JSON)
                 .content(json(mapOf("email" to owner.email, "role" to "VIEWER")))
@@ -150,5 +153,33 @@ class CaseApiTest {
         assertThrows<Exception> {
             jdbc.sql("UPDATE audit_events SET action = 'X' WHERE case_id = :c").param("c", id).update()
         }
+    }
+
+    @Test
+    fun `me returns the provisioned user and provisioning is audited once`() {
+        val u = TestUser()
+        mvc.perform(get("/api/v1/me").asUser(u))
+            .andExpect(status().isOk)
+            .andExpect(jsonPath("$.email").value(u.email))
+            .andExpect(jsonPath("$.platformAdmin").value(false))
+        mvc.perform(get("/api/v1/me").asUser(u)).andExpect(status().isOk)
+        val count = jdbc.sql(
+            """
+            SELECT count(*) FROM audit_events a JOIN users u ON a.actor_id = u.id
+            WHERE u.oidc_subject = :s AND a.action = 'USER_PROVISIONED'
+            """.trimIndent()
+        ).param("s", u.sub).query(Int::class.java).single()
+        assertThat(count).isEqualTo(1)
+    }
+
+    @Test
+    fun `cors allows the configured web origin only`() {
+        mvc.perform(
+            options("/api/v1/cases").header("Origin", "http://localhost:3000").header("Access-Control-Request-Method", "POST")
+        ).andExpect(status().isOk)
+            .andExpect(header().string("Access-Control-Allow-Origin", "http://localhost:3000"))
+        mvc.perform(
+            options("/api/v1/cases").header("Origin", "https://evil.example").header("Access-Control-Request-Method", "POST")
+        ).andExpect(status().isForbidden)
     }
 }

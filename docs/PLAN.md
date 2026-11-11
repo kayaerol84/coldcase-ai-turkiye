@@ -63,7 +63,7 @@ each other's tables.
 
 ## 4. Milestones
 
-### T0 — Foundation *(started in this commit)*
+### T0 — Foundation *(done)*
 - Monorepo, docker-compose (PostgreSQL 16 + pgvector, MinIO, Keycloak), CI.
 - Spring Boot API: JWT resource server, user auto-provisioning from token.
 - Schema V1: `users`, `cases`, `case_memberships`, `audit_events` (append-only).
@@ -72,8 +72,15 @@ each other's tables.
 - Role → permission matrix (Viewer, Researcher, Reviewer, Case Admin, Platform Admin).
 - Tests: permission checks, cross-case access returns 404, audit written.
 - Next.js shell with dark forensic theme tokens.
+- Web login (OIDC Authorization Code + PKCE), case list, create/edit case,
+  member management; `/api/v1/me`; CORS allow-list; stable API error codes
+  mapped to Turkish messages.
 
 **Exit:** a user can create a case; a second user cannot see it until added.
+*Met:* verified by API integration tests and a browser walk-through
+(create → edit → add viewer → viewer read-only → outsider gets not-found).
+MFA enforcement for privileged roles is configured at the identity provider and
+tracked under T6.
 
 ### T1 — Ingestion
 - Upload session → presigned PUT to private bucket → finalise endpoint.

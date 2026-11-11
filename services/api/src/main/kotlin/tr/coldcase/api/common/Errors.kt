@@ -12,7 +12,8 @@ class NotFoundException(message: String = "Not found") : RuntimeException(messag
 /** Thrown when a member is visible but lacks the permission for an action. */
 class ForbiddenException(message: String = "Forbidden") : RuntimeException(message)
 
-class BadRequestException(message: String) : RuntimeException(message)
+/** [code] is a stable, machine-readable identifier the web app maps to a localised message. */
+class BadRequestException(val code: String, message: String) : RuntimeException(message)
 
 @RestControllerAdvice
 class ApiExceptionHandler {
@@ -23,11 +24,13 @@ class ApiExceptionHandler {
     fun forbidden(e: ForbiddenException) = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, e.message)
 
     @ExceptionHandler(BadRequestException::class)
-    fun badRequest(e: BadRequestException) = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.message)
+    fun badRequest(e: BadRequestException): ProblemDetail =
+        ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, e.message).apply { setProperty("code", e.code) }
 
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun invalid(e: MethodArgumentNotValidException): ProblemDetail =
         ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "Validation failed").apply {
+            setProperty("code", "VALIDATION_FAILED")
             setProperty("errors", e.bindingResult.fieldErrors.map { mapOf("field" to it.field, "message" to it.defaultMessage) })
         }
 }

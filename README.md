@@ -31,11 +31,12 @@ cd services/api && ./gradlew bootRun
 ```
 
 ```bash
-cd apps/web && npm install && npm run dev
+cd apps/web && cp .env.example .env.local && npm install && npm run dev
 ```
 
 - API: http://localhost:8080 (OpenAPI at `/api/openapi`, Swagger UI at `/swagger-ui.html`)
-- Keycloak: http://localhost:8180 (realm `coldcase`, demo users `researcher` / `reviewer`)
+- Web: http://localhost:3000 — sign in as `researcher` / `researcher` or `reviewer` / `reviewer`
+- Keycloak: http://localhost:8180 (realm `coldcase`)
 - MinIO console: http://localhost:9001
 
 Get a dev token:
@@ -54,4 +55,5 @@ cd services/api && ./gradlew test
 
 ## Status
 
-Milestone **T0 — Foundation** in progress: case workspaces, case-level RBAC, append-only audit log.
+Milestone **T0 — Foundation** complete: OIDC login, case workspaces, case-level RBAC and
+member management, append-only audit log. Next: **T1 — Ingestion** (see `docs/PLAN.md`).

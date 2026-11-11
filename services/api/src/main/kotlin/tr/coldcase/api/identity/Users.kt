@@ -5,12 +5,13 @@ import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.security.oauth2.jwt.Jwt
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import tr.coldcase.api.audit.AuditLog
 import java.util.UUID
 
 data class AppUser(val id: UUID, val subject: String, val email: String?, val displayName: String?, val platformAdmin: Boolean)
 
 @Service
-class UserService(private val jdbc: JdbcClient) {
+class UserService(private val jdbc: JdbcClient, private val audit: AuditLog) {
 
     /** Resolves the authenticated principal to an application user, provisioning it on first sight. */
     @Transactional
@@ -29,7 +30,7 @@ class UserService(private val jdbc: JdbcClient) {
             VALUES (:id, :sub, :email, :name)
             ON CONFLICT (oidc_subject) DO UPDATE
                SET email = EXCLUDED.email, display_name = EXCLUDED.display_name, last_seen_at = now()
-            RETURNING id, oidc_subject, email, display_name, platform_admin
+            RETURNING id, oidc_subject, email, display_name, platform_admin, (xmax = 0) AS inserted
             """.trimIndent()
         )
             .param("id", UUID.randomUUID())
@@ -40,9 +41,13 @@ class UserService(private val jdbc: JdbcClient) {
                 AppUser(
                     rs.getObject("id", UUID::class.java), rs.getString("oidc_subject"),
                     rs.getString("email"), rs.getString("display_name"), rs.getBoolean("platform_admin"),
-                )
+                ) to rs.getBoolean("inserted")
             }
             .single()
+            .let { (user, inserted) ->
+                if (inserted) audit.record(user.id, "USER_PROVISIONED", targetType = "user", targetId = user.id.toString())
+                user
+            }
     }
 
     fun findIdBySubject(subject: String): UUID? =

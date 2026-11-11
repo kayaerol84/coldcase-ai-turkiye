@@ -1,4 +1,7 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import { Providers } from "@/components/Providers";
+import { UserMenu } from "@/components/UserMenu";
 import "./globals.css";
 
 export const metadata: Metadata = {
@@ -10,13 +13,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="tr">
       <body>
-        <div className="shell">
-          <header className="topbar">
-            <span className="brand">ColdCase AI Türkiye</span>
-            <span className="muted">Kaynağa dayalı araştırma çalışma alanı</span>
-          </header>
-          <main>{children}</main>
-        </div>
+        <Providers>
+          <div className="shell">
+            <header className="topbar">
+              <Link href="/" className="brand">ColdCase AI Türkiye</Link>
+              <span className="muted tagline">Kaynağa dayalı araştırma çalışma alanı</span>
+              <UserMenu />
+            </header>
+            <main>{children}</main>
+            <footer className="muted footer">
+              Yapay zekâ çıktıları taslaktır; her bulgu kaynağa bağlıdır ve insan incelemesi gerektirir.
+            </footer>
+          </div>
+        </Providers>
       </body>
     </html>
   );
