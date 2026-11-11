@@ -14,8 +14,16 @@ spring:
           issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8180/realms/coldcase}
   jackson:
     default-property-inclusion: non_null
+  servlet:
+    multipart:
+      max-file-size: ${MAX_UPLOAD_SIZE:500MB}
+      max-request-size: ${MAX_UPLOAD_SIZE:500MB}
+      file-size-threshold: 0 # always spool uploads to disk
 
 management:
+  server:
+    # Internal-only port for health checks and Prometheus scraping; do not expose publicly.
+    port: ${MANAGEMENT_PORT:8081}
   endpoints:
     web:
       exposure:
@@ -28,3 +36,33 @@ springdoc:
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
+  documents:
+    max-pages: ${MAX_PDF_PAGES:5000}
+  storage:
+    # filesystem (zero-setup local dev) | s3 (MinIO locally, S3-compatible store in an EU region in prod)
+    type: ${STORAGE_TYPE:filesystem}
+    filesystem-root: ${STORAGE_ROOT:./data/objects}
+    s3:
+      endpoint: ${S3_ENDPOINT:http://localhost:9000}
+      region: ${S3_REGION:eu-central-1}
+      bucket: ${S3_BUCKET:coldcase-originals}
+      access-key: ${S3_ACCESS_KEY:coldcase}
+      secret-key: ${S3_SECRET_KEY:coldcase-dev-secret}
+      path-style: ${S3_PATH_STYLE:true}
+      create-bucket: ${S3_CREATE_BUCKET:true}
+      server-side-encryption: ${S3_SSE:false}
+  worker:
+    # Run the processing worker in this process. Deploy the same image with API traffic disabled
+    # and this enabled to scale workers independently.
+    enabled: ${WORKER_ENABLED:true}
+    poll-interval: ${WORKER_POLL_INTERVAL:2s}
+    lease: ${WORKER_LEASE:15m}
+  extraction:
+    min-text-chars: 25
+    min-quality: 0.6
+    ocr-batch-size: 10
+    ocr:
+      command: ${TESSERACT_CMD:tesseract}
+      languages: ${OCR_LANGUAGES:tur}
+      dpi: 300
+      timeout: 180s

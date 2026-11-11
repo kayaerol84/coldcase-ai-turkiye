@@ -67,3 +67,27 @@ input, textarea, select { font: inherit; color: var(--text); background: var(--b
   .tagline { display: none; }
   .topbar { justify-content: space-between; }
 }
+
+/* Documents */
+.h3 { font-size: 15px; margin: 16px 0 6px; display: flex; align-items: center; gap: 8px; }
+.upload { border: 1px dashed var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 16px; }
+.grow { flex: 1; min-width: 200px; }
+.table-wrap { overflow-x: auto; }
+.pages-scroll { max-height: 70vh; overflow-y: auto; }
+.pages-scroll thead th { position: sticky; top: 0; background: var(--surface); }
+.table tbody tr.selected { background: var(--surface-2); }
+.table tbody tr { cursor: pointer; }
+.linkish { background: none; border: 0; color: var(--accent); font: inherit; cursor: pointer; padding: 0; text-decoration: underline; }
+.mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 13px; }
+.break { overflow-wrap: anywhere; }
+.split { display: grid; grid-template-columns: minmax(320px, 2fr) 3fr; gap: 16px; align-items: start; }
+.split > .card { margin-bottom: 0; }
+.check { flex-direction: row; align-items: center; gap: 8px; }
+.warn-text { color: var(--warning); }
+.warn-box { border: 1px solid var(--warning); color: var(--warning); border-radius: var(--radius); padding: 8px 12px; font-size: 14px; }
+.source-text { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; font-family: var(--font); font-size: 14px; line-height: 1.6; max-height: 60vh; overflow-y: auto; margin: 0; }
+.label + .muted { margin-left: 4px; }
+
+@media (max-width: 900px) {
+  .split { grid-template-columns: 1fr; }
+}

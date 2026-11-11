@@ -19,7 +19,8 @@ class SecurityConfig {
             .cors { }
             .sessionManagement { it.sessionCreationPolicy(SessionCreationPolicy.STATELESS) }
             .authorizeHttpRequests {
-                it.requestMatchers("/actuator/health", "/api/openapi/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                // Actuator endpoints are only served on the internal management port (management.server.port).
+                it.requestMatchers("/actuator/**", "/api/openapi/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                 it.anyRequest().authenticated()
             }
             .oauth2ResourceServer { it.jwt { } }

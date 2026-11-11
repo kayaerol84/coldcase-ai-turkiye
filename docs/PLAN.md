@@ -21,7 +21,7 @@ the following; each is isolated behind an interface so it can change later.
 | Queue technology (TR §20.4) | PostgreSQL job table (`FOR UPDATE SKIP LOCKED`) behind a `JobQueue` interface | No extra infra for MVP; swap for RabbitMQ/SQS later |
 | Object storage (TR §20.3) | S3 API; MinIO locally | Same SDK works for AWS S3 / Scaleway / OVH in an EU region |
 | Vector search | pgvector in the same PostgreSQL | As recommended in TR §2.2 |
-| OCR (TR §20.5) | OCRmyPDF + Tesseract `tur` in the worker image | Benchmark Turkish quality in T1 |
+| OCR (TR §20.5) | Tesseract `tur`, run per page on a PDFBox rendering (300 DPI) | Per-page retries and word confidences; OCRmyPDF's searchable-PDF output isn't needed because originals are never modified |
 | LLM / embeddings (TR §20.6) | Provider adapter interfaces; first adapters: Anthropic Claude for generation, a multilingual embedding model chosen by Turkish retrieval eval | No domain code imports a vendor SDK |
 | Report format (TR §20.9) | Markdown first, PDF rendered from Markdown | BR §6.1 item 13 |
 | Page numbering | `pdf_page_number` is **1-based**; `printed_page_label` stored separately | TR §4.2 requires one consistent convention |
@@ -82,8 +82,10 @@ each other's tables.
 MFA enforcement for privileged roles is configured at the identity provider and
 tracked under T6.
 
-### T1 — Ingestion
-- Upload session → presigned PUT to private bucket → finalise endpoint.
+### T1 — Ingestion *(done, pending validation on the real Volume 2 PDF)*
+- Multipart upload through the API (streamed to disk, hashed, validated, stored).
+  *Deferred:* presigned direct-to-bucket upload sessions, needed only if files
+  outgrow comfortable request sizes.
 - Server-side SHA-256, content-type sniffing (Tika), size limit, encrypted/corrupt
   detection, duplicate-by-hash policy.
 - Tables: `documents`, `document_versions`, `pages`, `processing_jobs`.
@@ -94,6 +96,11 @@ tracked under T6.
 
 **Exit:** the 870-page TBMM Volume 2 PDF ingests; every page has a row with
 status, method and quality.
+*Status:* a synthetic 870-page transcript (printed numbers, scanned and blank
+pages) ingests in ~13 s locally including OCR. Still to do once the real PDF is
+available: check printed-label detection against its actual header layout,
+measure OCR quality on its scanned pages, and tune the quality thresholds.
+Not yet built: malware scanning hook (T6), manual text correction (T2 viewer).
 
 ### T2 — Retrieval & source viewer
 - Chunker v1: within page, paragraph-aware, ~400–800 tokens, speaker detection

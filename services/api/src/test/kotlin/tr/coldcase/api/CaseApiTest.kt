@@ -1,52 +1,16 @@
 package tr.coldcase.api
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import org.springframework.beans.factory.annotation.Autowired
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
-import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
-import org.springframework.jdbc.core.simple.JdbcClient
-import org.springframework.security.oauth2.jwt.JwtDecoder
-import org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt
-import org.springframework.test.context.bean.override.mockito.MockitoBean
-import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.header
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.status
 import java.util.UUID
 
-@SpringBootTest
-@AutoConfigureMockMvc
-class CaseApiTest {
-    @Autowired lateinit var mvc: MockMvc
-    @Autowired lateinit var mapper: ObjectMapper
-    @Autowired lateinit var jdbc: JdbcClient
-    @MockitoBean lateinit var jwtDecoder: JwtDecoder
-
-    private data class TestUser(val sub: String = "sub-" + UUID.randomUUID()) {
-        val email = "$sub@example.org"
-    }
-
-    private fun MockHttpServletRequestBuilder.asUser(u: TestUser) =
-        with(jwt().jwt { it.subject(u.sub).claim("email", u.email).claim("name", "User ${u.sub.takeLast(4)}") })
-
-    private fun json(body: Any) = mapper.writeValueAsString(body)
-
-    private fun createCase(owner: TestUser, title: String = "Uğur Mumcu — TBMM Cilt 2"): String {
-        val res = mvc.perform(
-            post("/api/v1/cases").asUser(owner).contentType(MediaType.APPLICATION_JSON)
-                .content(json(mapOf("title" to title, "description" to "Demo corpus")))
-        ).andExpect(status().isCreated)
-            .andExpect(jsonPath("$.myRole").value("CASE_ADMIN"))
-            .andExpect(jsonPath("$.primaryLanguage").value("tr"))
-            .andReturn()
-        return mapper.readTree(res.response.contentAsString)["id"].asText()
-    }
+class CaseApiTest : ApiTestBase() {
 
     /** Ensures the user row exists (users are provisioned on first authenticated request). */
     private fun signIn(u: TestUser) {

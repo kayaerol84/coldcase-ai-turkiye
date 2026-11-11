@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import { AuthGate } from "@/components/AuthGate";
+import { DocumentsSection } from "@/components/DocumentsSection";
 import { ErrorNote } from "@/components/ErrorNote";
 import { api, Case, CaseRole, Member, roleLabels } from "@/lib/api";
 
@@ -46,10 +47,7 @@ function CaseDetail({ caseId }: { caseId: string }) {
           </dl>
         </section>
       )}
-      <section className="card">
-        <h2 className="h2">Belgeler</h2>
-        <p className="muted">Belge yükleme ve sayfa düzeyinde işleme bir sonraki aşamada (T1) eklenecek.</p>
-      </section>
+      <DocumentsSection caseId={caseId} canUpload={isAdmin} />
       <Members caseId={caseId} canManage={isAdmin} />
     </>
   );

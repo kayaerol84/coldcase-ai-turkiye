@@ -35,6 +35,7 @@ cd apps/web && cp .env.example .env.local && npm install && npm run dev
 ```
 
 - API: http://localhost:8080 (OpenAPI at `/api/openapi`, Swagger UI at `/swagger-ui.html`)
+- Health & Prometheus metrics: http://localhost:8081/actuator/health, `/actuator/prometheus` (internal port)
 - Web: http://localhost:3000 — sign in as `researcher` / `researcher` or `reviewer` / `reviewer`
 - Keycloak: http://localhost:8180 (realm `coldcase`)
 - MinIO console: http://localhost:9001
@@ -44,6 +45,25 @@ Get a dev token:
 ```bash
 curl -s -d client_id=coldcase-web -d grant_type=password -d username=researcher -d password=researcher http://localhost:8180/realms/coldcase/protocol/openid-connect/token
 ```
+
+### Document storage and OCR
+
+By default originals are stored on local disk under `services/api/data/objects`. To use MinIO from
+the compose stack instead:
+
+```bash
+STORAGE_TYPE=s3 ./gradlew bootRun
+```
+
+Scanned pages are OCR'd with Tesseract (Turkish). Install it locally for OCR to work; without it,
+scanned pages are flagged "OCR gerekli" and the document is marked ready with warnings.
+
+```bash
+sudo apt-get install tesseract-ocr tesseract-ocr-tur
+```
+
+Key settings (environment variables): `MAX_UPLOAD_SIZE` (500MB), `MAX_PDF_PAGES` (5000),
+`WORKER_ENABLED` (true), `OCR_LANGUAGES` (`tur`), `S3_*`, `S3_SSE` (enable in production).
 
 ## Tests
 
@@ -55,5 +75,10 @@ cd services/api && ./gradlew test
 
 ## Status
 
-Milestone **T0 — Foundation** complete: OIDC login, case workspaces, case-level RBAC and
-member management, append-only audit log. Next: **T1 — Ingestion** (see `docs/PLAN.md`).
+- **T0 — Foundation** complete: OIDC login, case workspaces, case-level RBAC and member
+  management, append-only audit log.
+- **T1 — Ingestion** complete pending validation on the real corpus: PDF upload with content
+  validation and SHA-256, immutable originals, asynchronous page-level extraction, Tesseract OCR
+  fallback, printed page labels, retries, reprocessing, document library and page inspector.
+
+Next: **T2 — Retrieval & source viewer** (see `docs/PLAN.md`).
