@@ -19,3 +19,4 @@ next-env.d.ts
 !.env.example
 data/
 *.pdf
+.claude/settings.local.json

@@ -2,7 +2,7 @@ package tr.coldcase.api.storage
 
 import org.springframework.stereotype.Component
 import tr.coldcase.api.config.AppProperties
-import tr.coldcase.api.processing.sha256
+import tr.coldcase.api.common.sha256
 import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption

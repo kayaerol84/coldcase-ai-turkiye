@@ -1,0 +1,102 @@
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "17 5 * * 1" # weekly, to catch newly published advisories
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  # Scanner images pinned by digest; bump deliberately.
+  GITLEAKS_IMAGE: zricethezav/gitleaks:v8.30.1@sha256:c00b6bd0aeb3071cbcb79009cb16a60dd9e0a7c60e2be9ab65d25e6bc8abbb7f
+  TRIVY_IMAGE: aquasec/trivy:0.76.1@sha256:790fd66d1697395d8693d1acaa1ea702406a20f109b6fc7bac8db623eca6c06c
+
+jobs:
+  secrets:
+    name: Secret scanning (full history)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        run: |
+          docker run --rm -v "$PWD:/repo" \
+            -e GIT_CONFIG_COUNT=1 -e GIT_CONFIG_KEY_0=safe.directory -e GIT_CONFIG_VALUE_0=/repo \
+            "$GITLEAKS_IMAGE" git /repo --config /repo/.gitleaks.toml --redact --verbose --exit-code 1
+
+  dependencies:
+    name: Vulnerable dependencies
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Trivy (Gradle and npm lockfiles)
+        run: |
+          docker run --rm -v "$PWD:/src" "$TRIVY_IMAGE" fs \
+            --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress \
+            /src
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - name: npm audit (production dependencies)
+        working-directory: apps/web
+        run: npm audit --omit=dev --audit-level=high
+
+  security-tests:
+    name: API security tests
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_DB: coldcase
+          POSTGRES_USER: coldcase
+          POSTGRES_PASSWORD: coldcase
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U coldcase" --health-interval 5s --health-retries 10
+    defaults:
+      run:
+        working-directory: services/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Install fonts used by test fixtures
+        run: sudo apt-get update && sudo apt-get install -y --no-install-recommends fonts-dejavu-core
+      - run: ./gradlew securityTest --no-daemon
+      - name: Keep test reports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: security-test-reports
+          path: services/api/build/reports/tests/securityTest
+
+  web-headers:
+    name: Web security headers
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: npm ci
+      - run: npm run build
+      - name: Start and check headers
+        run: |
+          npx next start -p 3000 > /tmp/next.log 2>&1 &
+          for i in $(seq 1 30); do curl -sf -o /dev/null http://localhost:3000 && break; sleep 1; done
+          npm run check-headers

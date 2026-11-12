@@ -8,6 +8,7 @@ import org.apache.pdfbox.rendering.PDFRenderer
 import org.apache.pdfbox.text.PDFTextStripper
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
+import tr.coldcase.api.common.sha256
 import tr.coldcase.api.config.AppProperties
 import tr.coldcase.api.documents.DocumentRepository
 import tr.coldcase.api.documents.DocumentStatus
@@ -21,9 +22,6 @@ import tr.coldcase.api.indexing.SegmentRepository
 import tr.coldcase.api.storage.ObjectStore
 import java.io.IOException
 import java.nio.file.Files
-import java.nio.file.Path
-import java.security.MessageDigest
-import java.util.HexFormat
 
 /** Errors that will not go away on retry; the job fails immediately. Messages start with a stable code. */
 open class PermanentProcessingException(val code: String, message: String) : RuntimeException("$code: $message")
@@ -224,17 +222,4 @@ class DocumentProcessor(
         }
         documents.updateStatus(version.documentId, status, detail)
     }
-}
-
-fun sha256(file: Path): String {
-    val digest = MessageDigest.getInstance("SHA-256")
-    Files.newInputStream(file).use { input ->
-        val buf = ByteArray(1 shl 16)
-        while (true) {
-            val n = input.read(buf)
-            if (n < 0) break
-            digest.update(buf, 0, n)
-        }
-    }
-    return HexFormat.of().formatHex(digest.digest())
 }

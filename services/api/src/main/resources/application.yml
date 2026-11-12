@@ -12,6 +12,8 @@ spring:
       resourceserver:
         jwt:
           issuer-uri: ${OIDC_ISSUER_URI:http://localhost:8180/realms/coldcase}
+          # Only tokens minted for this API are accepted (not tokens for other clients of the same realm).
+          audiences: ${OIDC_AUDIENCE:coldcase-api}
   jackson:
     default-property-inclusion: non_null
   servlet:
@@ -34,6 +36,9 @@ springdoc:
     path: /api/openapi
 
 app:
+  security:
+    # Serve the OpenAPI schema and Swagger UI without login (local development only).
+    public-api-docs: ${PUBLIC_API_DOCS:false}
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000}
   documents:

@@ -34,7 +34,7 @@ cd services/api && ./gradlew bootRun
 cd apps/web && cp .env.example .env.local && npm install && npm run dev
 ```
 
-- API: http://localhost:8080 (OpenAPI at `/api/openapi`, Swagger UI at `/swagger-ui.html`)
+- API: http://localhost:8080 (OpenAPI at `/api/openapi`, Swagger UI at `/swagger-ui.html` — set `PUBLIC_API_DOCS=true` to open them without login)
 - Health & Prometheus metrics: http://localhost:8081/actuator/health, `/actuator/prometheus` (internal port)
 - Web: http://localhost:3000 — sign in as `researcher` / `researcher` or `reviewer` / `reviewer`
 - Keycloak: http://localhost:8180 (realm `coldcase`)
@@ -83,12 +83,21 @@ Key settings (environment variables): `MAX_UPLOAD_SIZE` (500MB), `MAX_PDF_PAGES`
 `WORKER_ENABLED` (true), `OCR_LANGUAGES` (`tur`), `S3_*`, `S3_SSE` (enable in production),
 `EMBEDDINGS_PROVIDER` (`none`|`tei`), `EMBEDDINGS_URL`, `EMBEDDINGS_API_KEY`, `EMBEDDINGS_MODEL_REVISION`.
 
+## Working on this repo
+
+Read `CLAUDE.md` and the knowledge base in `docs/kb/` first (status, architecture, domain language, context map,
+invariants, security). Keep the knowledge base current in the same change.
+
 ## Tests
 
 API tests need a PostgreSQL at `DB_URL` (defaults to `localhost:5432/coldcase`, user/password `coldcase`):
 
 ```bash
 cd services/api && ./gradlew test
+```
+
+```bash
+cd services/api && ./gradlew securityTest
 ```
 
 ## Status

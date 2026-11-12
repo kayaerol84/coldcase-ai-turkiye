@@ -1,0 +1,11 @@
+# Secret scanning config (used by .github/workflows/security.yml).
+# Default rules plus a narrow allowlist for values that exist only in the local docker-compose stack.
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Local development fixtures (never used outside docker-compose / local runs)"
+regexes = [
+  '''coldcase-dev-secret''',
+  '''dev-embed-key''',
+]

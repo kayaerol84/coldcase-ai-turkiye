@@ -6,18 +6,23 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "tsc --noEmit"
+    "lint": "tsc --noEmit",
+    "check-headers": "node scripts/check-headers.mjs"
   },
   "dependencies": {
-    "next": "15.5.4",
+    "next": "15.5.28",
     "oidc-client-ts": "3.5.0",
-    "react": "19.1.1",
-    "react-dom": "19.1.1"
+    "react": "19.1.10",
+    "react-dom": "19.1.10"
   },
   "devDependencies": {
     "@types/node": "22.18.6",
     "@types/react": "19.1.13",
     "@types/react-dom": "19.1.9",
     "typescript": "5.9.2"
+  },
+  "overrides": {
+    "sharp": "0.35.5",
+    "postcss": "8.5.31"
   }
 }

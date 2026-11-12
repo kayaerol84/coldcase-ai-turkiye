@@ -16,7 +16,7 @@ import tr.coldcase.api.identity.AppUser
 import tr.coldcase.api.processing.JobQueue
 import tr.coldcase.api.processing.JobType
 import tr.coldcase.api.processing.PdfInspector
-import tr.coldcase.api.processing.sha256
+import tr.coldcase.api.common.sha256
 import org.apache.pdfbox.Loader
 import org.apache.pdfbox.rendering.ImageType
 import org.apache.pdfbox.rendering.PDFRenderer
@@ -92,7 +92,7 @@ class DocumentService(
             val version = VersionRecord(
                 id = UUID.randomUUID(), caseId = caseId, documentId = doc.id, objectKey = key, sha256 = sha,
                 mimeType = "application/pdf", fileSizeBytes = Files.size(tmp),
-                originalFilename = file.originalFilename?.take(255), pageCount = info.pageCount, uploadedAt = now,
+                originalFilename = safeFilename(file.originalFilename), pageCount = info.pageCount, uploadedAt = now,
             )
             try {
                 tx.executeWithoutResult {
@@ -256,6 +256,12 @@ class DocumentService(
     )
 
     private fun titleFrom(filename: String?): String =
-        filename?.substringAfterLast('/')?.substringAfterLast('\\')?.removeSuffix(".pdf")?.removeSuffix(".PDF")
-            ?.trim()?.take(500)?.ifEmpty { null } ?: "Adsız belge"
+        safeFilename(filename)?.removeSuffix(".pdf")?.removeSuffix(".PDF")?.trim()?.take(500)?.ifEmpty { null } ?: "Adsız belge"
 }
+
+/** Client-supplied filename reduced to a plain base name: no directories, control characters or quotes. */
+internal fun safeFilename(name: String?): String? =
+    name?.substringAfterLast('/')?.substringAfterLast('\\')
+        ?.filter { !it.isISOControl() && it != '"' }
+        ?.trim()?.trimStart('.')?.take(255)
+        ?.ifEmpty { null }

@@ -9,6 +9,13 @@ permissions:
   contents: read
 
 jobs:
+  knowledge-base:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: KB references point at existing files
+        run: python3 scripts/check-kb.py
+
   api:
     runs-on: ubuntu-latest
     services:
