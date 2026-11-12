@@ -39,6 +39,7 @@ jobs:
         run: |
           docker run --rm -v "$PWD:/src" "$TRIVY_IMAGE" fs \
             --scanners vuln --severity HIGH,CRITICAL --ignore-unfixed --exit-code 1 --no-progress \
+            --ignorefile /src/.trivyignore.yaml \
             /src
       - uses: actions/setup-node@v4
         with:

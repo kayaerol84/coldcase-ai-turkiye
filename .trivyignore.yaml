@@ -1,0 +1,16 @@
+# Accepted vulnerability findings. Every entry needs a justification and an expiry date;
+# after expired_at the finding fails the pipeline again. Review together with docs/kb/security.md.
+vulnerabilities:
+  - id: CVE-2026-47884
+    paths: ["services/api/gradle.lockfile"]
+    statement: >-
+      Spring Framework 6.2 (Spring Boot 3.5) has no open-source fix; fixed in Spring 7 (Spring Boot 4).
+      RCE via XsltView path handling: the API defines no XSLT views or view resolvers (JSON/PDF/PNG only).
+      Mitigation: migrate to Spring Boot 4 (tracked in docs/kb/status.md).
+    expired_at: 2026-12-31
+  - id: CVE-2026-47890
+    paths: ["services/api/gradle.lockfile"]
+    statement: >-
+      Spring Framework 6.2: SSE stream corruption with views. The API uses no server-sent events and no views.
+      Fixed in Spring 7 (Spring Boot 4 migration tracked in docs/kb/status.md).
+    expired_at: 2026-12-31

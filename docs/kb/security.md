@@ -47,5 +47,14 @@ least privilege, auditable. Requirements: TR §12, §16, §17.
 The matrix and token tests were mutation-checked: removing the authz call from one endpoint, or the audience
 setting, makes them fail with a precise message.
 
+## Accepted risks (`.trivyignore.yaml`, each with an expiry date)
+| Finding | Why accepted | Expires |
+|---|---|---|
+| CVE-2026-47884 (Spring Framework 6.2, RCE via `XsltView`) | No open-source fix for 6.2; the API has no XSLT views or view resolvers | 2026-12-31 |
+| CVE-2026-47890 (Spring Framework 6.2, SSE with views) | No server-sent events, no views | 2026-12-31 |
+Both are fixed in Spring 7 → **Spring Boot 4 migration must land before 2026-12-31**, when the scanner fails again.
+Patched transitive versions pinned in `services/api/build.gradle.kts` (`tomcat.version`, `jackson-bom.version`,
+`postgresql.version`) — remove the overrides when the BOM catches up.
+
 Not yet covered: container image scanning (no Dockerfiles yet), SAST (CodeQL needs GitHub Advanced Security on
 private repos; Semgrep is an option), DAST, rate-limit tests, malware scanning — see `status.md`.

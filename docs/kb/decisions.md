@@ -6,6 +6,8 @@ Architectural decisions get an ADR in `docs/adr/`. Smaller ones are logged here 
 - `docs/adr/0001-embedding-model.md` — Accepted: self-hosted embeddings only, BAAI/bge-m3 default, bake-off pending.
 
 ## Log
+- 2026-11-12 — Accept two Spring 6.2 CVEs (unused features) until 2026-12-31 via `.trivyignore.yaml`; Boot 4 migration before then.
+- 2026-11-12 — Gradle locking limited to shipped/test classpaths so scanners don't report build-tool internals.
 - 2026-11-12 — OpenAPI schema requires authentication by default (`PUBLIC_API_DOCS` for local dev).
 - 2026-11-12 — Next.js image optimisation disabled; Next.js pinned to 15.5.28 (first release outside all advisories), with `sharp`/`postcss` overrides.
 - 2026-11-12 — Spring Boot 3.5.16; Netty excluded from the AWS SDK (sync client only). Migration to Boot 4 tracked in `status.md`.

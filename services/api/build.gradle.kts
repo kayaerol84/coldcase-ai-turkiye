@@ -12,6 +12,12 @@ java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
 
 repositories { mavenCentral() }
 
+// Security patch overrides of Spring Boot's managed versions (see docs/kb/security.md). Remove each when the
+// Spring Boot BOM catches up, or with the Spring Boot 4 migration.
+extra["tomcat.version"] = "10.1.60"
+extra["jackson-bom.version"] = "2.21.7"
+extra["postgresql.version"] = "42.7.12"
+
 dependencies {
     implementation("org.springframework.boot:spring-boot-starter-web")
     implementation("org.springframework.boot:spring-boot-starter-validation")
@@ -41,9 +47,11 @@ dependencies {
 
 kotlin { compilerOptions { freeCompilerArgs.addAll("-Xjsr305=strict") } }
 
-// Exact resolved versions are committed (gradle.lockfile) so dependency scanners see what ships.
+// Exact resolved versions of what ships and what tests run on are committed (gradle.lockfile), so dependency
+// scanners see exactly that. Build-tool internals (e.g. the Kotlin plugin's own classpaths) are not locked.
 // Update with: ./gradlew dependencies --write-locks
-dependencyLocking { lockAllConfigurations() }
+val lockedConfigurations = setOf("compileClasspath", "runtimeClasspath", "productionRuntimeClasspath", "testCompileClasspath", "testRuntimeClasspath")
+configurations.matching { it.name in lockedConfigurations }.configureEach { resolutionStrategy.activateDependencyLocking() }
 
 tasks.test {
     useJUnitPlatform { excludeTags("security") }

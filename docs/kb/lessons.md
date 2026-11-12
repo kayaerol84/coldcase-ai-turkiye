@@ -22,4 +22,6 @@ Things that cost time once. Add to this list whenever something surprises you.
 - **`npm audit | tail` hides the exit code;** run it unpiped (or with `set -o pipefail`) when gating.
 - **Pinned web framework versions age fast:** Next.js 15.5.4 had a critical RCE within weeks. The weekly
   security workflow exists for this; act on it.
+- **First Trivy run** found 17 HIGH/CRITICAL in transitive Java deps of a year-old Spring Boot pin; Bouncy Castle
+  findings came only from the Kotlin plugin's own classpath, which is why locking covers shipped classpaths only.
 - **Real people in fixtures:** early fixtures put invented quotes in real witnesses' mouths. Use fictional names.

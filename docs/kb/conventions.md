@@ -22,6 +22,8 @@
   `./gradlew securityTest` (and in `check`). A new endpoint needs a rule in `AuthorizationMatrixTest`.
 - Dependencies: Gradle versions are locked in `services/api/gradle.lockfile` — after changing dependencies run
   `./gradlew dependencies --write-locks` and commit the lockfile. Pick releases at least two weeks old.
+- A scanner finding is fixed by upgrading. Only if no fix exists *and* the code can't reach it, add it to
+  `.trivyignore.yaml` with a statement and `expired_at`, and list it under "Accepted risks" in `docs/kb/security.md`.
 - Use **fictional people** in fixtures; generate PDFs with `TestPdfs`.
 
 ## Web

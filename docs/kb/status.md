@@ -18,8 +18,9 @@ _Last updated: 2026-11-12 (security pipeline, DDD skills, KB)_
 - Pinned bge-m3 revision (`EMBEDDINGS_MODEL_REVISION`) for shared environments.
 
 ## Known debt
-- **Spring Boot 3.5 line**: on the last 3.5 patch (3.5.16, June 2026); its open-source support has likely ended.
-  Plan the migration to Spring Boot 4 (Jackson 3, Spring Framework 7) before the pilot.
+- **Spring Boot 3.5 line → Boot 4 migration due by 2026-12-31.** 3.5.16 is the last 3.5 patch; two Spring
+  Framework 6.2 CVEs have no open-source fix and are accepted only until then (`.trivyignore.yaml`).
+  Tomcat/Jackson/Postgres driver are pinned to patched versions in `services/api/build.gradle.kts`.
 - Context cycle `documents ↔ processing ↔ indexing`; `indexing → search` for `TurkishText`.
   See `domain/context-map.md` §Known debt. Pinned by `ContextBoundariesTest`.
 - No Dockerfiles yet, so no container image scanning (T6).
