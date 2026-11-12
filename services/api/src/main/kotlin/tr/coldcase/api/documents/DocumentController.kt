@@ -9,6 +9,9 @@ import org.springframework.web.bind.annotation.*
 import org.springframework.web.multipart.MultipartFile
 import org.springframework.web.servlet.mvc.method.annotation.StreamingResponseBody
 import tr.coldcase.api.identity.UserService
+import tr.coldcase.api.indexing.IndexInfo
+import jakarta.validation.Valid
+import jakarta.validation.constraints.Size
 import java.nio.charset.StandardCharsets
 import java.time.LocalDate
 import java.time.OffsetDateTime
@@ -37,6 +40,8 @@ data class DocumentResponse(
     val updatedAt: OffsetDateTime,
     val file: FileInfo?,
     val pages: PageCounts?,
+    /** Searchable once status is INDEXED. embeddingModel is null when only keyword search covers it. */
+    val index: IndexInfo?,
 ) {
     companion object {
         fun of(v: DocumentView) = v.document.let { d ->
@@ -44,6 +49,7 @@ data class DocumentResponse(
                 d.id, d.caseId, d.title, d.sourceName, d.sourceDate, d.language, d.status, d.statusDetail, d.createdAt, d.updatedAt,
                 v.version?.let { FileInfo(it.id, it.sha256, it.fileSizeBytes, it.mimeType, it.originalFilename, it.pageCount, it.uploadedAt) },
                 v.pages,
+                v.index,
             )
         }
     }
@@ -79,6 +85,8 @@ data class PageResponse(
 }
 
 data class ReprocessRequest(val pages: List<Int>? = null)
+
+data class PageReportRequest(val kind: PageReportKind, @field:Size(max = 2000) val note: String? = null)
 
 @RestController
 @RequestMapping("/api/v1")
@@ -126,6 +134,26 @@ class DocumentController(private val documents: DocumentService, private val use
             .header("X-Document-Sha256", version.sha256)
             .body(StreamingResponseBody { out -> stream.use { it.transferTo(out) } })
     }
+
+    @GetMapping("/documents/{documentId}/pages/{pageNumber}/image", produces = [MediaType.IMAGE_PNG_VALUE])
+    fun pageImage(
+        @PathVariable documentId: UUID,
+        @PathVariable pageNumber: Int,
+        @RequestParam(defaultValue = "110") dpi: Int,
+    ): ResponseEntity<ByteArray> =
+        ResponseEntity.ok()
+            .contentType(MediaType.IMAGE_PNG)
+            .header(HttpHeaders.CACHE_CONTROL, "private, max-age=300")
+            .header("X-Content-Type-Options", "nosniff")
+            .body(documents.renderPage(users.current(), documentId, pageNumber, dpi))
+
+    @PostMapping("/documents/{documentId}/pages/{pageNumber}/reports")
+    @ResponseStatus(HttpStatus.CREATED)
+    fun reportPage(@PathVariable documentId: UUID, @PathVariable pageNumber: Int, @Valid @RequestBody req: PageReportRequest) =
+        documents.reportPage(users.current(), documentId, pageNumber, req.kind, req.note)
+
+    @GetMapping("/documents/{documentId}/reports")
+    fun reports(@PathVariable documentId: UUID) = documents.reports(users.current(), documentId)
 
     @PostMapping("/documents/{documentId}/reprocess")
     @ResponseStatus(HttpStatus.ACCEPTED)

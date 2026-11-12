@@ -14,6 +14,10 @@ import tr.coldcase.api.documents.DocumentStatus
 import tr.coldcase.api.documents.PageExtraction
 import tr.coldcase.api.documents.PageStatus
 import tr.coldcase.api.documents.VersionRecord
+import tr.coldcase.api.embeddings.EmbeddingProvider
+import tr.coldcase.api.embeddings.EmbeddingUnavailableException
+import tr.coldcase.api.indexing.Indexer
+import tr.coldcase.api.indexing.SegmentRepository
 import tr.coldcase.api.storage.ObjectStore
 import java.io.IOException
 import java.nio.file.Files
@@ -35,6 +39,9 @@ class DocumentProcessor(
     private val ocr: OcrEngine,
     private val props: AppProperties,
     private val meters: MeterRegistry,
+    private val indexer: Indexer,
+    private val segments: SegmentRepository,
+    private val embeddings: EmbeddingProvider,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
     private val workerId = "worker-" + ProcessHandle.current().pid()
@@ -55,6 +62,7 @@ class DocumentProcessor(
             when (job.type) {
                 JobType.EXTRACT_DOCUMENT -> extract(job)
                 JobType.OCR_PAGES -> ocrPages(job)
+                JobType.INDEX_DOCUMENT -> index(job)
             }
             queue.complete(job.id)
         } catch (e: PermanentProcessingException) {
@@ -66,6 +74,12 @@ class DocumentProcessor(
             log.warn("Job {} ({}) attempt {} failed: {}", job.id, job.type, job.attempts, e.javaClass.simpleName)
             queue.fail(job, "TRANSIENT: ${e.javaClass.simpleName}: ${e.message}", retryable = true)
         } finally {
+            // Once extraction/OCR work for a version is finished, (re)build its search index.
+            // Checked after this job's own status is written, so the last job to finish always sees none active.
+            val extractionFailed = job.type == JobType.EXTRACT_DOCUMENT && outcome == "failed"
+            if (job.type != JobType.INDEX_DOCUMENT && outcome != "retried" && !extractionFailed && !queue.hasActive(job.documentVersionId)) {
+                queue.enqueueIndex(job.caseId, job.documentVersionId)
+            }
             meters.timer("coldcase.jobs", "type", job.type.name, "outcome", outcome)
                 .record(java.time.Duration.ofNanos(System.nanoTime() - started))
             refreshDocumentStatus(job.documentVersionId)
@@ -157,6 +171,17 @@ class DocumentProcessor(
         }
     }
 
+    private fun index(job: Job) {
+        val version = documents.findVersion(job.documentVersionId)
+            ?: throw PermanentProcessingException("VERSION_MISSING", "Document version not found")
+        try {
+            // On the final attempt, fall back to keyword-only indexing so the document is still searchable.
+            indexer.index(version, allowWithoutEmbeddings = job.attempts >= job.maxAttempts)
+        } catch (e: EmbeddingUnavailableException) {
+            throw IllegalStateException("Embedding server unavailable") // transient: retried with backoff
+        }
+    }
+
     /** Downloads the original, verifies its SHA-256 against the recorded hash, and opens it. */
     private fun withVerifiedOriginal(version: VersionRecord, block: (PDDocument) -> Unit) {
         val tmp = Files.createTempFile("original-", ".pdf")
@@ -186,11 +211,15 @@ class DocumentProcessor(
         }
         val counts = documents.pageCounts(versionId)
         val extractFailure = queue.latestFailure(versionId, JobType.EXTRACT_DOCUMENT)
+        val indexFailure = queue.latestFailure(versionId, JobType.INDEX_DOCUMENT)
+        val index = segments.indexInfo(versionId)
         val (status, detail) = when {
             extractFailure != null -> DocumentStatus.FAILED to extractFailure.substringBefore(':')
             counts.total == 0 -> DocumentStatus.FAILED to "NO_PAGES"
+            indexFailure != null || index.status != "INDEXED" -> DocumentStatus.READY_WITH_WARNINGS to "NOT_SEARCHABLE"
             counts.needsOcr > 0 || counts.failed > 0 || counts.pending > 0 ->
                 DocumentStatus.READY_WITH_WARNINGS to (queue.latestFailure(versionId, JobType.OCR_PAGES)?.substringBefore(':') ?: "PAGES_NEED_REVIEW")
+            embeddings.modelId != null && index.embeddingModel == null -> DocumentStatus.READY_WITH_WARNINGS to "SEMANTIC_INDEX_MISSING"
             else -> DocumentStatus.READY to null
         }
         documents.updateStatus(version.documentId, status, detail)

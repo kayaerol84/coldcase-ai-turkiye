@@ -1,6 +1,7 @@
 # ADR 0001 — Embedding model for Turkish retrieval (T2)
 
-**Status:** Proposed — final pick depends on a bake-off on the real Volume 2 corpus
+**Status:** Accepted 2026-11-12 — self-hosted only; bge-m3 is the default, the bake-off
+compares self-hosted candidates only
 **Date:** 2026-11-11
 
 ## Context
@@ -54,12 +55,26 @@ Constraints from the requirements:
    `(text_segment_id, model_id)` unique, so a new model can be backfilled and compared side by
    side before switching. Every search and answer logs which model produced its vectors.
 
-## Open questions for the product owner
+## Decision
 
-- **Is sending the full corpus to an external embedding API acceptable** (with an EU-region
-  DPA), or must embedding stay on our own infrastructure? This decides whether API models are
-  in the bake-off at all.
-- GPU budget: is a GPU instance acceptable later if the bake-off shows it pays off?
+The product owner decided embeddings stay on our own infrastructure: no external embedding
+API, including EU-hosted ones. Voyage and Cohere drop out of the bake-off; candidates are
+bge-m3 and Qwen3-Embedding-0.6B (and 4B/8B if a GPU is approved later).
+
+## Security notes for self-hosting
+
+Self-hosting removes the largest risk (the whole corpus going to a third party), but adds
+a few of its own. How each is handled:
+
+| Risk | Mitigation |
+|---|---|
+| **Model supply chain:** weights downloaded from Hugging Face could be swapped or malicious (pickle files can run code). | Pin the model commit (`EMBEDDINGS_MODEL_REVISION`) and the TEI image by digest, and check that the pinned revision is served from safetensors weights (pickle-format `.bin` files can run code when loaded). TEI doesn't execute code from the model repository. The API checks `/info` and refuses to embed if the served model or revision differs. In production, mirror the pinned weights into our own registry and run with no outbound internet. |
+| **The embedding server receives all document text.** | Internal network only (localhost in dev; no ingress in prod); shared API key; our client never logs text. Before production, confirm from the server's own logs that request bodies aren't logged at the configured log level. |
+| **Vectors leak content:** embedding inversion can partly reconstruct text from vectors. | Treat vectors as sensitive as the text: same database, encryption at rest, `case_id` on every row, deleted with their segments (cascade), covered by retention and backups like the text. Vectors are never returned by the API. |
+| **Cross-case leakage through vector search** (approximate indexes filter *after* finding neighbours). | Exact scan restricted to one case in SQL before ranking; no global approximate index. Tested per search mode. |
+| **Query privacy:** what researchers search for is itself sensitive. | Queries aren't logged or audited; metrics record only timings and empty-result counts. |
+| **Denial of service:** embedding is CPU-heavy. | Query length capped (500 chars), batch indexing in the worker, the API degrades to keyword search when the server is unavailable. Rate limiting is planned for T6. |
+| **Poisoned documents** crafted to rank highly for certain questions. | Only Case Admins upload; every result shows its source page for checking; prompt-injection defences for generation come in T3. |
 
 ## Evidence and caveats
 

@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component
 import java.time.Duration
 import java.util.UUID
 
-enum class JobType { EXTRACT_DOCUMENT, OCR_PAGES }
+enum class JobType { EXTRACT_DOCUMENT, OCR_PAGES, INDEX_DOCUMENT }
 
 data class Job(
     val id: UUID,
@@ -38,6 +38,17 @@ class JobQueue(private val jdbc: JdbcClient, private val mapper: ObjectMapper) {
             .param("payload", mapper.writeValueAsString(payload))
             .update()
         return id
+    }
+
+    /** Queues indexing unless an indexing job is already waiting for this version. */
+    fun enqueueIndex(caseId: UUID, versionId: UUID) {
+        jdbc.sql(
+            """
+            INSERT INTO processing_jobs (id, case_id, document_version_id, job_type, payload, status)
+            VALUES (:id, :case, :v, 'INDEX_DOCUMENT', '{}', 'QUEUED')
+            ON CONFLICT (document_version_id) WHERE job_type = 'INDEX_DOCUMENT' AND status = 'QUEUED' DO NOTHING
+            """.trimIndent()
+        ).param("id", UUID.randomUUID()).param("case", caseId).param("v", versionId).update()
     }
 
     /** Claims the next runnable job, optionally restricted to one document version (used by tests). */

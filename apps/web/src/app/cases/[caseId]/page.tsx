@@ -47,6 +47,13 @@ function CaseDetail({ caseId }: { caseId: string }) {
           </dl>
         </section>
       )}
+      <section className="card row between">
+        <div>
+          <h2 className="h2">Arama</h2>
+          <p className="muted small" style={{ margin: 0 }}>Dosyadaki tüm belgelerde anahtar kelime, anlam ve tam ifade araması.</p>
+        </div>
+        <Link className="btn primary" href={`/cases/${caseId}/search`}>Belgelerde ara</Link>
+      </section>
       <DocumentsSection caseId={caseId} canUpload={isAdmin} />
       <Members caseId={caseId} canManage={isAdmin} />
     </>

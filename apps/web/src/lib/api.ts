@@ -92,6 +92,9 @@ const codeMessages: Record<string, string> = {
   PROCESSING_IN_PROGRESS: "Belge şu anda işleniyor. İşlem bitince tekrar deneyin.",
   NOT_EXTRACTED: "Sayfalar yeniden işlenmeden önce belgenin metni çıkarılmalı.",
   INVALID_PAGES: "Geçersiz sayfa numarası.",
+  EMPTY_QUERY: "Arama ifadesi boş.",
+  QUERY_TOO_LONG: "Arama ifadesi çok uzun.",
+  INTEGRITY_CHECK_FAILED: "Saklanan dosya kayıtlı SHA-256 özetiyle eşleşmiyor; sayfa gösterilemiyor.",
 };
 
 function messageFor(status: number, code?: string): string {
@@ -137,6 +140,8 @@ export const statusDetailLabels: Record<string, string> = {
   MAX_ATTEMPTS: "İşlem çok sayıda denemeden sonra durduruldu.",
   VERSION_MISSING: "Belge sürümü bulunamadı.",
   TRANSIENT: "Geçici bir hata nedeniyle işlem başarısız oldu.",
+  NOT_SEARCHABLE: "Belge henüz aramaya eklenmedi. Yeniden işlemeyi deneyin.",
+  SEMANTIC_INDEX_MISSING: "Anlamsal arama dizini oluşturulamadı; belge yalnızca anahtar kelimeyle aranabiliyor.",
 };
 
 export const labelSourceLabels: Record<string, string> = {
@@ -170,6 +175,7 @@ export type Doc = {
   updatedAt: string;
   file?: DocumentFile;
   pages?: PageCounts;
+  index?: IndexInfo;
 };
 
 export type Page = {
@@ -187,6 +193,86 @@ export type Page = {
   ocrEngine?: string;
   ocrEngineVersion?: string;
   extractorVersion?: string;
+};
+
+export type IndexInfo = {
+  status: "NOT_INDEXED" | "INDEXED" | "FAILED";
+  indexedAt?: string;
+  chunkerVersion?: string;
+  embeddingModel?: string;
+  segmentCount?: number;
+};
+
+export type SearchMode = "HYBRID" | "KEYWORD" | "SEMANTIC" | "EXACT";
+export type MatchKind = "KEYWORD" | "SEMANTIC" | "EXACT_PHRASE";
+
+export const searchModeLabels: Record<SearchMode, string> = {
+  HYBRID: "Karma",
+  KEYWORD: "Anahtar kelime",
+  SEMANTIC: "Anlamsal",
+  EXACT: "Tam ifade",
+};
+
+export const matchLabels: Record<MatchKind, string> = {
+  KEYWORD: "Kelime eşleşmesi",
+  SEMANTIC: "Anlam benzerliği",
+  EXACT_PHRASE: "Tam ifade",
+};
+
+export type SearchFilters = {
+  documentIds?: string[];
+  pdfPageFrom?: number;
+  pdfPageTo?: number;
+  speaker?: string;
+  sourceKind?: "EMBEDDED_TEXT" | "OCR";
+};
+
+export type SearchHit = {
+  segmentId: string;
+  documentId: string;
+  documentTitle: string;
+  pageId: string;
+  pdfPageNumber: number;
+  printedPageLabel?: string;
+  speaker?: string;
+  speakerFromPreviousPage: boolean;
+  text: string;
+  charStart: number;
+  charEnd: number;
+  sourceKind: "EMBEDDED_TEXT" | "OCR";
+  ocrConfidence?: number;
+  highlights: { start: number; end: number }[];
+  matchedBy: MatchKind[];
+  diagnostics: { lexicalRank?: number; lexicalScore?: number; vectorRank?: number; vectorSimilarity?: number; fusedScore: number };
+};
+
+export type SearchResult = {
+  mode: SearchMode;
+  modeUsed: SearchMode;
+  semanticAvailable: boolean;
+  embeddingModel?: string;
+  results: SearchHit[];
+  tookMs: number;
+};
+
+export type PageReportKind = "EXTRACTION_ERROR" | "OCR_ERROR" | "WRONG_PAGE_LABEL" | "MISSING_TEXT" | "OTHER";
+
+export const pageReportKindLabels: Record<PageReportKind, string> = {
+  EXTRACTION_ERROR: "Metin hatalı çıkarılmış",
+  OCR_ERROR: "OCR hatası (isim, tarih, kelime)",
+  WRONG_PAGE_LABEL: "Basılı sayfa numarası yanlış",
+  MISSING_TEXT: "Sayfada eksik metin",
+  OTHER: "Diğer",
+};
+
+export type PageReport = {
+  id: string;
+  pdfPageNumber: number;
+  kind: PageReportKind;
+  note?: string;
+  status: string;
+  createdBy?: string;
+  createdAt: string;
 };
 
 export type UploadInput = { file: File; title?: string; sourceName?: string; sourceDate?: string };
@@ -216,6 +302,15 @@ export const api = {
   getPage: (id: string, n: number) => request<Page>("GET", `/api/v1/documents/${id}/pages/${n}`),
   reprocess: (id: string, pages?: number[]) =>
     request<Doc>("POST", `/api/v1/documents/${id}/reprocess`, pages ? { pages } : undefined),
+  search: (caseId: string, query: string, mode: SearchMode, filters: SearchFilters) =>
+    request<SearchResult>("POST", `/api/v1/cases/${caseId}/search`, { query, mode, filters }),
+  pageImageUrl: async (id: string, n: number) => {
+    const res = await send("GET", `/api/v1/documents/${id}/pages/${n}/image?dpi=110`);
+    return URL.createObjectURL(await res.blob());
+  },
+  reportPage: (id: string, n: number, kind: PageReportKind, note?: string) =>
+    request<PageReport>("POST", `/api/v1/documents/${id}/pages/${n}/reports`, { kind, note }),
+  listReports: (id: string) => request<PageReport[]>("GET", `/api/v1/documents/${id}/reports`),
   /** Fetches the original with the bearer token and returns a blob URL (the API is not cookie-authenticated). */
   originalFileUrl: async (id: string, inline: boolean) => {
     const res = await send("GET", `/api/v1/documents/${id}/file?disposition=${inline ? "inline" : "attachment"}`);

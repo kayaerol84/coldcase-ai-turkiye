@@ -62,8 +62,26 @@ scanned pages are flagged "OCR gerekli" and the document is marked ready with wa
 sudo apt-get install tesseract-ocr tesseract-ocr-tur
 ```
 
+### Search and embeddings
+
+Keyword and exact-phrase search work out of the box. Semantic search needs the self-hosted embedding
+server from the compose stack (`embeddings`, BAAI/bge-m3; the first start downloads the model, ~2.3 GB):
+
+```bash
+EMBEDDINGS_PROVIDER=tei EMBEDDINGS_API_KEY=dev-embed-key ./gradlew bootRun
+```
+
+Pin the model in every non-local environment: set `EMBEDDINGS_MODEL_REVISION` to the model's
+Hugging Face commit hash for both the embedding server and the API. The API checks the server's
+reported model and revision and disables semantic search on a mismatch. Embeddings are never sent to
+an external API (see `docs/adr/0001-embedding-model.md`).
+
+PostgreSQL needs the `vector` and `pg_trgm` extensions. The compose image has them; elsewhere a
+database administrator may need to run `CREATE EXTENSION vector;` once before migrations.
+
 Key settings (environment variables): `MAX_UPLOAD_SIZE` (500MB), `MAX_PDF_PAGES` (5000),
-`WORKER_ENABLED` (true), `OCR_LANGUAGES` (`tur`), `S3_*`, `S3_SSE` (enable in production).
+`WORKER_ENABLED` (true), `OCR_LANGUAGES` (`tur`), `S3_*`, `S3_SSE` (enable in production),
+`EMBEDDINGS_PROVIDER` (`none`|`tei`), `EMBEDDINGS_URL`, `EMBEDDINGS_API_KEY`, `EMBEDDINGS_MODEL_REVISION`.
 
 ## Tests
 
@@ -81,4 +99,9 @@ cd services/api && ./gradlew test
   validation and SHA-256, immutable originals, asynchronous page-level extraction, Tesseract OCR
   fallback, printed page labels, retries, reprocessing, document library and page inspector.
 
-Next: **T2 — Retrieval & source viewer** (see `docs/PLAN.md`).
+- **T2 — Retrieval & source viewer** complete pending the bake-off on the real corpus: speaker-aware
+  page-bounded chunking, Turkish full-text search (stemming + diacritic folding), exact phrase,
+  self-hosted bge-m3 semantic search, hybrid ranking, filters, page viewer with the rendered original
+  and highlighted passage, page problem reports.
+
+Next: **T3 — Source-grounded Q&A** (see `docs/PLAN.md`).

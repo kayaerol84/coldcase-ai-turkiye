@@ -17,8 +17,17 @@ import tr.coldcase.api.processing.JobQueue
 import tr.coldcase.api.processing.JobType
 import tr.coldcase.api.processing.PdfInspector
 import tr.coldcase.api.processing.sha256
+import org.apache.pdfbox.Loader
+import org.apache.pdfbox.rendering.ImageType
+import org.apache.pdfbox.rendering.PDFRenderer
+import tr.coldcase.api.indexing.IndexInfo
+import tr.coldcase.api.indexing.SegmentRepository
+import tr.coldcase.api.storage.IntegrityException
 import tr.coldcase.api.storage.ObjectKeys
 import tr.coldcase.api.storage.ObjectStore
+import tr.coldcase.api.storage.OriginalCache
+import java.io.ByteArrayOutputStream
+import javax.imageio.ImageIO
 import java.io.InputStream
 import java.nio.file.Files
 import java.time.LocalDate
@@ -27,7 +36,19 @@ import java.util.UUID
 
 data class UploadMetadata(val title: String?, val sourceName: String?, val sourceDate: LocalDate?, val language: String?)
 
-data class DocumentView(val document: DocumentRecord, val version: VersionRecord?, val pages: PageCounts?)
+data class DocumentView(val document: DocumentRecord, val version: VersionRecord?, val pages: PageCounts?, val index: IndexInfo? = null)
+
+enum class PageReportKind { EXTRACTION_ERROR, OCR_ERROR, WRONG_PAGE_LABEL, MISSING_TEXT, OTHER }
+
+data class PageReport(
+    val id: UUID,
+    val pdfPageNumber: Int,
+    val kind: PageReportKind,
+    val note: String?,
+    val status: String,
+    val createdBy: String?,
+    val createdAt: OffsetDateTime,
+)
 
 @Service
 class DocumentService(
@@ -39,6 +60,9 @@ class DocumentService(
     private val audit: AuditLog,
     private val tx: TransactionTemplate,
     private val props: AppProperties,
+    private val segments: SegmentRepository,
+    private val cache: OriginalCache,
+    private val jdbc: org.springframework.jdbc.core.simple.JdbcClient,
 ) {
     /**
      * Validates, hashes and stores the original, then queues processing. Returns immediately;
@@ -94,14 +118,14 @@ class DocumentService(
         access.require(caseId, actor.id, Permission.CASE_VIEW)
         return repo.listDocuments(caseId).map { d ->
             val v = repo.latestVersion(d.id)
-            DocumentView(d, v, v?.let { repo.pageCounts(it.id) })
+            DocumentView(d, v, v?.let { repo.pageCounts(it.id) }, v?.let { segments.indexInfo(it.id) })
         }
     }
 
     fun get(actor: AppUser, documentId: UUID): DocumentView {
         val (doc, _) = authorize(actor, documentId, Permission.CASE_VIEW)
         val v = repo.latestVersion(doc.id)
-        return DocumentView(doc, v, v?.let { repo.pageCounts(it.id) })
+        return DocumentView(doc, v, v?.let { repo.pageCounts(it.id) }, v?.let { segments.indexInfo(it.id) })
     }
 
     fun pages(actor: AppUser, documentId: UUID): List<PageSummary> {
@@ -124,6 +148,66 @@ class DocumentService(
             mapOf("versionId" to v.id.toString(), "sha256" to v.sha256),
         )
         return v to store.open(v.objectKey)
+    }
+
+    /**
+     * Renders one page of the original as PNG, a faithful view of the source for checking
+     * citations and extracted text (TR §6.2). Rendered from the hash-verified original; the image itself is not stored.
+     */
+    fun renderPage(actor: AppUser, documentId: UUID, pageNumber: Int, dpi: Int): ByteArray {
+        val (doc, _) = authorize(actor, documentId, Permission.CASE_VIEW)
+        val v = repo.latestVersion(doc.id) ?: throw NotFoundException("Page not found")
+        if (pageNumber < 1 || pageNumber > (v.pageCount ?: 0)) throw NotFoundException("Page not found")
+        val file = try {
+            cache.get(v.objectKey, v.sha256)
+        } catch (e: IntegrityException) {
+            throw ApiException(HttpStatus.CONFLICT, "INTEGRITY_CHECK_FAILED", "Stored original does not match its recorded hash")
+        }
+        Loader.loadPDF(file.toFile()).use { pdf ->
+            val image = PDFRenderer(pdf).renderImageWithDPI(pageNumber - 1, dpi.coerceIn(50, 200).toFloat(), ImageType.RGB)
+            return ByteArrayOutputStream().also { ImageIO.write(image, "png", it) }.toByteArray()
+        }
+    }
+
+    /** A researcher flags a problem with a page's extracted text or label (TR §11.2). */
+    fun reportPage(actor: AppUser, documentId: UUID, pageNumber: Int, kind: PageReportKind, note: String?): PageReport {
+        val (doc, _) = authorize(actor, documentId, Permission.RESEARCH_WRITE)
+        val v = repo.latestVersion(doc.id) ?: throw NotFoundException("Page not found")
+        val page = repo.page(v.id, pageNumber) ?: throw NotFoundException("Page not found")
+        val id = UUID.randomUUID()
+        tx.executeWithoutResult {
+            jdbc.sql(
+                """
+                INSERT INTO page_reports (id, case_id, document_id, page_id, kind, note, created_by)
+                VALUES (:id, :case, :doc, :page, :kind, :note, :by)
+                """.trimIndent()
+            )
+                .param("id", id).param("case", doc.caseId).param("doc", doc.id).param("page", page.summary.id)
+                .param("kind", kind.name).param("note", note?.trim()?.take(2000)?.ifEmpty { null }).param("by", actor.id)
+                .update()
+            audit.record(actor.id, "PAGE_REPORTED", doc.caseId, "page", page.summary.id.toString(), mapOf("kind" to kind.name, "pdfPageNumber" to pageNumber))
+        }
+        return reports(actor, documentId).first { it.id == id }
+    }
+
+    fun reports(actor: AppUser, documentId: UUID): List<PageReport> {
+        val (doc, _) = authorize(actor, documentId, Permission.CASE_VIEW)
+        return jdbc.sql(
+            """
+            SELECT r.id, p.pdf_page_number, r.kind, r.note, r.status, coalesce(u.display_name, u.email) AS who, r.created_at
+              FROM page_reports r JOIN pages p ON p.id = r.page_id JOIN users u ON u.id = r.created_by
+             WHERE r.document_id = :doc AND r.case_id = :case
+             ORDER BY r.created_at DESC
+            """.trimIndent()
+        )
+            .param("doc", doc.id).param("case", doc.caseId)
+            .query { rs, _ ->
+                PageReport(
+                    rs.getObject(1, UUID::class.java), rs.getInt(2), PageReportKind.valueOf(rs.getString(3)), rs.getString(4),
+                    rs.getString(5), rs.getString(6), rs.getObject(7, OffsetDateTime::class.java),
+                )
+            }
+            .list()
     }
 
     /**

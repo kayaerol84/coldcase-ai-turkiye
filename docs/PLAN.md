@@ -22,7 +22,7 @@ the following; each is isolated behind an interface so it can change later.
 | Object storage (TR §20.3) | S3 API; MinIO locally | Same SDK works for AWS S3 / Scaleway / OVH in an EU region |
 | Vector search | pgvector in the same PostgreSQL | As recommended in TR §2.2 |
 | OCR (TR §20.5) | Tesseract `tur`, run per page on a PDFBox rendering (300 DPI) | Per-page retries and word confidences; OCRmyPDF's searchable-PDF output isn't needed because originals are never modified |
-| LLM / embeddings (TR §20.6) | Provider adapter interfaces; first adapters: Anthropic Claude for generation, a multilingual embedding model chosen by Turkish retrieval eval | No domain code imports a vendor SDK |
+| LLM / embeddings (TR §20.6) | Provider adapter interfaces. Embeddings: **self-hosted only**, BAAI/bge-m3 via TEI (ADR 0001). Generation: Anthropic Claude, receiving only retrieved, permission-filtered passages | No domain code imports a vendor SDK |
 | Report format (TR §20.9) | Markdown first, PDF rendered from Markdown | BR §6.1 item 13 |
 | Page numbering | `pdf_page_number` is **1-based**; `printed_page_label` stored separately | TR §4.2 requires one consistent convention |
 | Deployment | Docker images; EU-region cloud TBD | Compose for local, Terraform later |
@@ -102,7 +102,7 @@ available: check printed-label detection against its actual header layout,
 measure OCR quality on its scanned pages, and tune the quality thresholds.
 Not yet built: malware scanning hook (T6), manual text correction (T2 viewer).
 
-### T2 — Retrieval & source viewer
+### T2 — Retrieval & source viewer *(done, pending bake-off on the real corpus)*
 - Chunker v1: within page, paragraph-aware, ~400–800 tokens, speaker detection
   for hearing transcripts, cross-page chunks keep all page refs.
 - `text_segments` + PostgreSQL FTS (`simple` + unaccent config tuned for Turkish)
@@ -112,6 +112,12 @@ Not yet built: malware scanning hook (T6), manual text correction (T2 viewer).
   passage, OCR warnings, "report an error".
 
 **Exit:** curated questions return the expected page in top-k (target ≥ 95%).
+*Status:* built and tested end to end with a stand-in embedding server; real bge-m3
+quality is unmeasured until the Volume 2 PDF and the eval questions exist. Decisions taken:
+vector search is an exact scan within one case (no approximate index yet: per-case corpora
+are small and filtering first keeps case isolation exact); the cited passage is highlighted
+in the extracted text next to a rendering of the page; highlighting regions on the page
+image itself is deferred.
 
 ### T3 — Source-grounded Q&A
 - Pipeline: scope → retrieve → rerank → delimited context package → generate

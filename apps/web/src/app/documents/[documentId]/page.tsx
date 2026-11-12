@@ -113,6 +113,12 @@ function DocumentView({ documentId }: { documentId: string }) {
               <dd className="mono break">{doc.file.sha256}</dd>
               <dt>Yüklenme</dt>
               <dd>{new Date(doc.file.uploadedAt).toLocaleString("tr-TR")}</dd>
+              <dt>Arama dizini</dt>
+              <dd>
+                {doc.index?.status === "INDEXED"
+                  ? `${doc.index.segmentCount ?? 0} pasaj · ${doc.index.embeddingModel ? `anlamsal: ${doc.index.embeddingModel}` : "yalnızca anahtar kelime"}`
+                  : "henüz dizinlenmedi"}
+              </dd>
             </>
           )}
         </dl>
@@ -121,6 +127,7 @@ function DocumentView({ documentId }: { documentId: string }) {
 
       <div className="split">
         <section className="card">
+          <p className="muted small">Sayfa numarasına tıklayarak orijinal sayfayı ve metni yan yana açın.</p>
           <div className="row between">
             <h2 className="h2">Sayfalar</h2>
             <label className="check">
@@ -150,7 +157,9 @@ function DocumentView({ documentId }: { documentId: string }) {
                         onClick={() => setSelected(p.pdfPageNumber)}
                       >
                         <td>
-                          <button className="linkish" onClick={() => setSelected(p.pdfPageNumber)}>{p.pdfPageNumber}</button>
+                          <Link href={`/documents/${documentId}/pages/${p.pdfPageNumber}`} onClick={(e) => e.stopPropagation()}>
+                            {p.pdfPageNumber}
+                          </Link>
                         </td>
                         <td>{p.printedPageLabel ?? <span className="muted">—</span>}</td>
                         <td><StatusLabel text={s.tr} tone={s.tone} /></td>

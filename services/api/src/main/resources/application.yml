@@ -42,6 +42,7 @@ app:
     # filesystem (zero-setup local dev) | s3 (MinIO locally, S3-compatible store in an EU region in prod)
     type: ${STORAGE_TYPE:filesystem}
     filesystem-root: ${STORAGE_ROOT:./data/objects}
+    cache-dir: ${STORAGE_CACHE_DIR:./data/cache}
     s3:
       endpoint: ${S3_ENDPOINT:http://localhost:9000}
       region: ${S3_REGION:eu-central-1}
@@ -66,3 +67,19 @@ app:
       languages: ${OCR_LANGUAGES:tur}
       dpi: 300
       timeout: 180s
+  embeddings:
+    # none: keyword search only. tei: self-hosted embedding server (see infra/docker). Never an external API.
+    provider: ${EMBEDDINGS_PROVIDER:none}
+    model-id: ${EMBEDDINGS_MODEL:BAAI/bge-m3}
+    model-revision: ${EMBEDDINGS_MODEL_REVISION:}
+    dims: 1024
+    batch-size: 16
+    tei:
+      url: ${EMBEDDINGS_URL:http://localhost:8082}
+      api-key: ${EMBEDDINGS_API_KEY:}
+      timeout: 60s
+  search:
+    max-query-length: 500
+    candidates-per-method: 50
+    default-limit: 20
+    max-limit: 50

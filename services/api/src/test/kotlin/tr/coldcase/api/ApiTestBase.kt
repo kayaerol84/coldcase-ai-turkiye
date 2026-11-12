@@ -3,6 +3,10 @@ package tr.coldcase.api
 import com.fasterxml.jackson.databind.JsonNode
 import com.fasterxml.jackson.databind.ObjectMapper
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.boot.test.context.TestConfiguration
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Import
+import org.springframework.context.annotation.Primary
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
@@ -24,7 +28,15 @@ import java.util.UUID
 /** Shared setup: real PostgreSQL (DB_URL), mocked JWT decoding, filesystem object store, worker disabled. */
 @SpringBootTest
 @AutoConfigureMockMvc
+@Import(ApiTestBase.TestBeans::class)
 abstract class ApiTestBase {
+    @TestConfiguration
+    class TestBeans {
+        @Bean
+        @Primary
+        fun fakeEmbeddings() = FakeEmbeddingProvider()
+    }
+
     @Autowired lateinit var mvc: MockMvc
     @Autowired lateinit var mapper: ObjectMapper
     @Autowired lateinit var jdbc: JdbcClient
@@ -69,6 +81,7 @@ abstract class ApiTestBase {
             registry.add("app.storage.type") { "filesystem" }
             registry.add("app.storage.filesystem-root") { storageRoot.toString() }
             registry.add("app.worker.enabled") { "false" }
+            registry.add("app.storage.cache-dir") { Files.createTempDirectory("coldcase-test-cache").toString() }
         }
     }
 }

@@ -29,8 +29,8 @@ class DocumentApiTest : ApiTestBase() {
     @Autowired lateinit var queue: JobQueue
 
     private val transcript = listOf(
-        "KOMİSYON BAŞKANI — Sayın Ergün, diskler konusunda ne söylemek istersiniz?",
-        "YILMAZ ERGÜN — Hatırladığım kadarıyla evde bir inceleme yapıldı.",
+        "KOMİSYON BAŞKANI — Sayın Tuna, diskler konusunda ne söylemek istersiniz?",
+        "ILGAZ TUNA — Hatırladığım kadarıyla evde bir inceleme yapıldı.",
         "Telefon kayıtlarının dosyaya ulaşmadığı ifade edildi.",
     )
 
@@ -76,7 +76,7 @@ class DocumentApiTest : ApiTestBase() {
         assertThat(p1["quality"].asDouble()).isGreaterThan(0.8)
         assertThat(p1["extractorVersion"].asText()).startsWith("pdfbox-")
         assertThat(p1.has("ocrText")).isFalse()
-        if (TestPdfs.hasTurkishFont) assertThat(p1["embeddedText"].asText()).contains("kayıtlarının", "ERGÜN")
+        if (TestPdfs.hasTurkishFont) assertThat(p1["embeddedText"].asText()).contains("kayıtlarının", "ILGAZ TUNA")
         assertThat(page(owner, docId, 2)["printedPageLabel"].asText()).isEqualTo("1427")
 
         // The blank page is never silently dropped: it is flagged and OCR'd (or left flagged if OCR is unavailable).
@@ -108,7 +108,7 @@ class DocumentApiTest : ApiTestBase() {
         assumeTrue(ocr.available, "tesseract not installed")
         val owner = TestUser()
         val caseId = createCase(owner)
-        val scanned = ImagePage(listOf("1082", "", "HAYRETTIN OZDEMIR - Disklerin teslim", "edildigini hatirliyorum. Komisyon", "kayitlari inceledi."))
+        val scanned = ImagePage(listOf("1082", "", "NAZMI OZTURK - Disklerin teslim", "edildigini hatirliyorum. Komisyon", "kayitlari inceledi."))
         val (docId, versionId) = uploadOk(owner, caseId, TestPdfs.build(listOf(scanned)))
         processor.drain(versionId)
 
