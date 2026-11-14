@@ -29,5 +29,5 @@ _Last updated: 2026-11-14 (arm64-friendly dev stack, SeaweedFS replaces MinIO)_
 - Page-image highlighting of cited passages (only text highlighting exists).
 - Presigned direct-to-bucket uploads not implemented (multipart through the API).
 - Real Keycloak not yet exercised by an automated test (no Docker in the agent environment); the S3 path is tested
-  in CI against SeaweedFS (`S3ObjectStoreIntegrationTest`).
+  in CI against SeaweedFS (`S3ObjectStoreIntegrationTest`; CI fails if those tests are skipped).
 - Embedding server has no native arm64 image: Apple Silicon developers run it emulated or natively via TEI's Metal build.

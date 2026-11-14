@@ -54,6 +54,11 @@ jobs:
       - run: ./gradlew test --no-daemon
         env:
           S3_TEST_ENDPOINT: http://localhost:9000
+      - name: S3 integration tests actually ran (not skipped)
+        run: |
+          f=build/test-results/test/TEST-tr.coldcase.api.S3ObjectStoreIntegrationTest.xml
+          grep -o 'tests="[0-9]*" skipped="[0-9]*" failures="[0-9]*" errors="[0-9]*"' "$f"
+          grep -q 'tests="3" skipped="0" failures="0" errors="0"' "$f"
       - name: Object store logs
         if: failure()
         run: docker logs objectstore 2>&1 | tail -100
