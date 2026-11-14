@@ -1,0 +1,9 @@
+{
+  "identities": [
+    {
+      "name": "coldcase-dev",
+      "credentials": [{ "accessKey": "coldcase", "secretKey": "coldcase-dev-secret" }],
+      "actions": ["Admin", "Read", "List", "Tagging", "Write"]
+    }
+  ]
+}

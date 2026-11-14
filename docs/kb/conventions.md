@@ -14,6 +14,10 @@
 - Every case-owned table has `case_id`. Every source-derived row keeps `document_id`/`page_id`.
 - PDF page numbers are 1-based. Store printed labels separately.
 
+## Local infrastructure
+- Every image in `infra/docker/docker-compose.yml` is pinned (digest where possible) and must run on amd64 **and**
+  arm64, or sit behind a profile with an explicit `platform` and a README note. CI validates the file.
+
 ## Tests
 - API tests need PostgreSQL (`DB_URL`, default `localhost:5432/coldcase`) with `vector` and `pg_trgm`.
 - Extend `ApiTestBase` (real DB, mocked JWT decoding, filesystem store, worker off, fake embeddings).

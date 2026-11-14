@@ -1,6 +1,6 @@
 # Status
 
-_Last updated: 2026-11-12 (security pipeline, DDD skills, KB)_
+_Last updated: 2026-11-14 (arm64-friendly dev stack, SeaweedFS replaces MinIO)_
 
 | Milestone | State | Notes |
 |---|---|---|
@@ -28,4 +28,6 @@ _Last updated: 2026-11-12 (security pipeline, DDD skills, KB)_
   on a private repo; Semgrep is the alternative). Web CSP still allows `'unsafe-inline'` scripts (Next.js needs nonces).
 - Page-image highlighting of cited passages (only text highlighting exists).
 - Presigned direct-to-bucket uploads not implemented (multipart through the API).
-- MinIO/S3 storage path and real Keycloak never exercised in this build environment (no Docker).
+- Real Keycloak not yet exercised by an automated test (no Docker in the agent environment); the S3 path is tested
+  in CI against SeaweedFS (`S3ObjectStoreIntegrationTest`).
+- Embedding server has no native arm64 image: Apple Silicon developers run it emulated or natively via TEI's Metal build.

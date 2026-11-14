@@ -44,7 +44,7 @@ app:
   documents:
     max-pages: ${MAX_PDF_PAGES:5000}
   storage:
-    # filesystem (zero-setup local dev) | s3 (MinIO locally, S3-compatible store in an EU region in prod)
+    # filesystem (zero-setup local dev) | s3 (SeaweedFS locally via the compose `s3` profile, S3-compatible store in an EU region in prod)
     type: ${STORAGE_TYPE:filesystem}
     filesystem-root: ${STORAGE_ROOT:./data/objects}
     cache-dir: ${STORAGE_CACHE_DIR:./data/cache}

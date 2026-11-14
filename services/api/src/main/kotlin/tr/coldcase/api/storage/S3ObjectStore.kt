@@ -13,7 +13,7 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.nio.file.StandardCopyOption
 
-/** S3-compatible store (MinIO locally). Uses conditional writes (If-None-Match) so originals are never replaced. */
+/** S3-compatible store (SeaweedFS locally, an EU-region S3-compatible store in production). Uses conditional writes (If-None-Match) so originals are never replaced. */
 class S3ObjectStore(
     private val s3: S3Client,
     private val bucket: String,

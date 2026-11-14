@@ -24,4 +24,8 @@ Things that cost time once. Add to this list whenever something surprises you.
   security workflow exists for this; act on it.
 - **First Trivy run** found 17 HIGH/CRITICAL in transitive Java deps of a year-old Spring Boot pin; Bouncy Castle
   findings came only from the Kotlin plugin's own classpath, which is why locking covers shipped classpaths only.
+- **`docker compose up` on Apple Silicon:** one image without an arm64 build (TEI CPU) aborts *all* pulls, so the other
+  images show as "Interrupted". Check platforms with the registry API before pinning an image; amd64-only services go
+  behind a profile with `platform: linux/amd64`.
+- **MinIO no longer publishes community container images** (Docker Hub repo gone); the dev stack uses SeaweedFS.
 - **Real people in fixtures:** early fixtures put invented quotes in real witnesses' mouths. Use fictional names.

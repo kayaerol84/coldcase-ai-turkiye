@@ -19,7 +19,7 @@ the following; each is isolated behind an interface so it can change later.
 | Single vs multi-user (BR §14.1) | Multi-user with case membership from day one | Roles (Viewer → Platform Admin) and IDOR tests require it; retrofitting is costly |
 | Auth provider (TR §20.2) | Any OIDC provider; Keycloak in local dev | Backend is a plain JWT resource server |
 | Queue technology (TR §20.4) | PostgreSQL job table (`FOR UPDATE SKIP LOCKED`) behind a `JobQueue` interface | No extra infra for MVP; swap for RabbitMQ/SQS later |
-| Object storage (TR §20.3) | S3 API; MinIO locally | Same SDK works for AWS S3 / Scaleway / OVH in an EU region |
+| Object storage (TR §20.3) | S3 API; SeaweedFS locally (MinIO stopped publishing community images) | Same SDK works for AWS S3 / Scaleway / OVH in an EU region |
 | Vector search | pgvector in the same PostgreSQL | As recommended in TR §2.2 |
 | OCR (TR §20.5) | Tesseract `tur`, run per page on a PDFBox rendering (300 DPI) | Per-page retries and word confidences; OCRmyPDF's searchable-PDF output isn't needed because originals are never modified |
 | LLM / embeddings (TR §20.6) | Provider adapter interfaces. Embeddings: **self-hosted only**, BAAI/bge-m3 via TEI (ADR 0001). Generation: Anthropic Claude, receiving only retrieved, permission-filtered passages | No domain code imports a vendor SDK |
@@ -35,7 +35,7 @@ coldcase-ai-turkiye/
 ├── services/api/                  # Kotlin + Spring Boot modular monolith
 ├── workers/document-processor/    # PDF extraction, OCR, chunking, embeddings (Kotlin)
 ├── packages/api-contracts/        # OpenAPI spec (generated from the API, checked in)
-├── infra/docker/                  # docker-compose: postgres+pgvector, minio, keycloak
+├── infra/docker/                  # docker-compose: postgres+pgvector, keycloak, seaweedfs (s3), tei (embeddings)
 ├── evals/                         # benchmark questions + expected citations
 ├── docs/                          # requirements, plan, ADRs
 └── .github/workflows/             # CI
@@ -64,7 +64,7 @@ each other's tables.
 ## 4. Milestones
 
 ### T0 — Foundation *(done)*
-- Monorepo, docker-compose (PostgreSQL 16 + pgvector, MinIO, Keycloak), CI.
+- Monorepo, docker-compose (PostgreSQL 16 + pgvector, Keycloak; S3 store and embeddings as profiles), CI.
 - Spring Boot API: JWT resource server, user auto-provisioning from token.
 - Schema V1: `users`, `cases`, `case_memberships`, `audit_events` (append-only).
 - Case API: `POST/GET /api/v1/cases`, `GET/PATCH /api/v1/cases/{id}`,

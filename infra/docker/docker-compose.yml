@@ -1,4 +1,10 @@
 # Local development stack. Not for production use. All ports are bound to localhost only.
+#
+#   docker compose -f infra/docker/docker-compose.yml up -d                        # Postgres + Keycloak
+#   docker compose -f infra/docker/docker-compose.yml --profile s3 up -d           # + S3-compatible object store
+#   docker compose -f infra/docker/docker-compose.yml --profile embeddings up -d   # + embedding server (amd64 only)
+#
+# Every image runs natively on amd64 and arm64 (Apple Silicon) except the embedding server; see below.
 name: coldcase
 services:
   postgres:
@@ -14,15 +20,6 @@ services:
       interval: 5s
       retries: 10
 
-  minio:
-    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
-    command: server /data --console-address ":9001"
-    environment:
-      MINIO_ROOT_USER: coldcase
-      MINIO_ROOT_PASSWORD: coldcase-dev-secret
-    ports: ["127.0.0.1:9000:9000", "127.0.0.1:9001:9001"]
-    volumes: [miniodata:/data]
-
   keycloak:
     image: quay.io/keycloak/keycloak:26.3
     command: start-dev --import-realm --http-port 8180
@@ -32,10 +29,26 @@ services:
     ports: ["127.0.0.1:8180:8180"]
     volumes: ["./keycloak:/opt/keycloak/data/import:ro"]
 
+  objectstore:
+    # S3-compatible object store for STORAGE_TYPE=s3 (the API defaults to local disk, so this is optional).
+    # SeaweedFS replaces MinIO, which no longer publishes community container images.
+    # Host port 9000 keeps the API's default S3_ENDPOINT working. Image pinned by digest; upgrade deliberately.
+    profiles: ["s3"]
+    image: chrislusf/seaweedfs:4.51@sha256:f7a49e3f3972ebed5be2ed4befa4a0c68eb7bdddba6e692d42729ceb545134b8
+    command: server -s3 -s3.port=8333 -s3.config=/etc/seaweedfs/s3.json
+    ports: ["127.0.0.1:9000:8333"]
+    volumes:
+      - objectdata:/data
+      - ./seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+
   embeddings:
     # Self-hosted embedding server (Hugging Face Text Embeddings Inference) running BAAI/bge-m3.
     # Document text is sent here, so it must never be exposed beyond the backend network.
+    # TEI publishes CPU images for linux/amd64 only. On Apple Silicon this runs under emulation (enable
+    # "Use Rosetta for x86_64/amd64 emulation" in Docker Desktop); it works but is slow. See README for options.
     # Image pinned by digest; upgrade deliberately. Pin the model too with EMBEDDINGS_MODEL_REVISION.
+    profiles: ["embeddings"]
+    platform: linux/amd64
     image: ghcr.io/huggingface/text-embeddings-inference:cpu-1.9.3@sha256:ad950d30878eceb72aaf32024d26fa2b1d04a75304fa0b4776b49aa1941fea07
     command: >-
       --model-id BAAI/bge-m3
@@ -48,5 +61,5 @@ services:
 
 volumes:
   pgdata:
-  miniodata:
+  objectdata:
   hfcache:

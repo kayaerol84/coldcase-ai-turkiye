@@ -17,14 +17,18 @@ output is a draft until a human reviews it.
 | `services/api` | Kotlin + Spring Boot modular monolith (REST `/api/v1`) |
 | `workers/document-processor` | PDF extraction / OCR / indexing worker (T1) |
 | `packages/api-contracts` | OpenAPI contract |
-| `infra/docker` | Local stack: PostgreSQL+pgvector, MinIO, Keycloak |
+| `infra/docker` | Local stack: PostgreSQL+pgvector, Keycloak; optional SeaweedFS (S3) and TEI embeddings |
 | `evals` | Retrieval & citation benchmark |
 
 ## Local development
 
+Start PostgreSQL and Keycloak (runs natively on Intel and Apple Silicon):
+
 ```bash
 docker compose -f infra/docker/docker-compose.yml up -d
 ```
+
+Optional services are behind compose profiles: `s3` (S3-compatible object store) and `embeddings` (semantic search).
 
 ```bash
 cd services/api && ./gradlew bootRun
@@ -38,7 +42,6 @@ cd apps/web && cp .env.example .env.local && npm install && npm run dev
 - Health & Prometheus metrics: http://localhost:8081/actuator/health, `/actuator/prometheus` (internal port)
 - Web: http://localhost:3000 — sign in as `researcher` / `researcher` or `reviewer` / `reviewer`
 - Keycloak: http://localhost:8180 (realm `coldcase`)
-- MinIO console: http://localhost:9001
 
 Get a dev token:
 
@@ -48,11 +51,21 @@ curl -s -d client_id=coldcase-web -d grant_type=password -d username=researcher 
 
 ### Document storage and OCR
 
-By default originals are stored on local disk under `services/api/data/objects`. To use MinIO from
-the compose stack instead:
+By default originals are stored on local disk under `services/api/data/objects`. To use S3 storage
+instead, start the S3-compatible store (SeaweedFS, on `localhost:9000`) and point the API at it:
+
+```bash
+docker compose -f infra/docker/docker-compose.yml --profile s3 up -d
+```
 
 ```bash
 STORAGE_TYPE=s3 ./gradlew bootRun
+```
+
+The S3 adapter's integration tests run against it when `S3_TEST_ENDPOINT` is set:
+
+```bash
+S3_TEST_ENDPOINT=http://localhost:9000 ./gradlew test --tests '*S3ObjectStoreIntegrationTest*'
 ```
 
 Scanned pages are OCR'd with Tesseract (Turkish). Install it locally for OCR to work; without it,
@@ -62,14 +75,30 @@ scanned pages are flagged "OCR gerekli" and the document is marked ready with wa
 sudo apt-get install tesseract-ocr tesseract-ocr-tur
 ```
 
+On macOS:
+
+```bash
+brew install tesseract tesseract-lang
+```
+
 ### Search and embeddings
 
-Keyword and exact-phrase search work out of the box. Semantic search needs the self-hosted embedding
-server from the compose stack (`embeddings`, BAAI/bge-m3; the first start downloads the model, ~2.3 GB):
+Keyword and exact-phrase search work out of the box (`EMBEDDINGS_PROVIDER=none`, the default). Semantic
+search needs the self-hosted embedding server (BAAI/bge-m3; the first start downloads the model, ~2.3 GB):
+
+```bash
+docker compose -f infra/docker/docker-compose.yml --profile embeddings up -d
+```
 
 ```bash
 EMBEDDINGS_PROVIDER=tei EMBEDDINGS_API_KEY=dev-embed-key ./gradlew bootRun
 ```
+
+The embedding server image (Hugging Face Text Embeddings Inference, CPU) is published for amd64 only.
+On Apple Silicon it runs under emulation: enable "Use Rosetta for x86_64/amd64 emulation on Apple Silicon" in
+Docker Desktop. That works but is slow for indexing large documents. For day-to-day work on a Mac, keyword search
+(`EMBEDDINGS_PROVIDER=none`) is usually enough; alternatively run TEI natively with its Metal build (see the TEI
+documentation) on port 8082 with `--api-key dev-embed-key`.
 
 Pin the model in every non-local environment: set `EMBEDDINGS_MODEL_REVISION` to the model's
 Hugging Face commit hash for both the embedding server and the API. The API checks the server's
