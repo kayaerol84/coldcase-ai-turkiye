@@ -22,7 +22,7 @@ least privilege, auditable. Requirements: TR §12, §16, §17.
 | Embedding model swap / supply chain | Pinned image digest + model revision; `/info` check | `TeiEmbeddingProvider`, compose | `RetrievalUnitTest` |
 | Vector inversion | Vectors treated as sensitive as text; never returned by the API | `segment_embeddings` | review |
 | Leaked secrets in git | gitleaks on full history | `security.yml` | CI `secrets` |
-| Vulnerable dependencies | Trivy on Gradle lockfile + npm lockfile; `npm audit`; patched Next.js 15.5.28 / React 19.1.10, `sharp`/`postcss` overrides; Netty async client excluded from the AWS SDK | `security.yml`, `apps/web/package.json`, `services/api/build.gradle.kts` | CI `dependencies` (weekly + every push) |
+| Vulnerable dependencies | Renovate update PRs (OSV vulnerability alerts bypass the schedule and release-age wait); Trivy on Gradle lockfile + npm lockfile; `npm audit`; patched Next.js 15.5.28 / React 19.1.10, `sharp`/`postcss` overrides; Netty async client excluded from the AWS SDK | `security.yml`, `apps/web/package.json`, `services/api/build.gradle.kts` | CI `dependencies` (weekly + every push) |
 | Image optimiser exploits (Next.js) | `images.unoptimized` — `/_next/image` not served | `apps/web/next.config.ts` | manual (404) |
 | Prompt injection via documents (T3) | Delimited source blocks, no instructions from sources, citation validation | T3 | planned |
 | Brute force / DoS | Query length caps; rate limiting planned | `SearchController` | T6 |

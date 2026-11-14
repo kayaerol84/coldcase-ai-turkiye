@@ -1,0 +1,104 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "description": "Dependency updates for ColdCase AI Türkiye. Policy: docs/kb/conventions.md (Dependencies) and docs/kb/security.md.",
+  "extends": [
+    "config:recommended",
+    ":dependencyDashboard",
+    "helpers:pinGitHubActionDigests",
+    "docker:pinDigests"
+  ],
+  "timezone": "Europe/Istanbul",
+  "schedule": ["before 7am on monday"],
+  "labels": ["dependencies"],
+  "prConcurrentLimit": 10,
+  "prHourlyLimit": 4,
+  "minimumReleaseAge": "14 days",
+  "internalChecksFilter": "strict",
+  "osvVulnerabilityAlerts": true,
+  "vulnerabilityAlerts": {
+    "enabled": true,
+    "labels": ["dependencies", "security"],
+    "minimumReleaseAge": null,
+    "schedule": ["at any time"]
+  },
+  "lockFileMaintenance": {
+    "enabled": true,
+    "schedule": ["before 7am on monday"]
+  },
+  "packageRules": [
+    {
+      "description": "Major upgrades need a deliberate decision (e.g. Spring Boot 4, Next.js 16, Gradle 9): approve them on the Dependency Dashboard.",
+      "matchUpdateTypes": ["major"],
+      "dependencyDashboardApproval": true,
+      "addLabels": ["major"]
+    },
+    {
+      "groupName": "Spring Boot",
+      "matchPackageNames": ["/^org\\.springframework\\.boot/", "/^io\\.spring\\.dependency-management/"]
+    },
+    {
+      "groupName": "Kotlin",
+      "matchPackageNames": ["/^org\\.jetbrains\\.kotlin/"]
+    },
+    {
+      "groupName": "AWS SDK",
+      "matchPackageNames": ["/^software\\.amazon\\.awssdk/"]
+    },
+    {
+      "description": "Next.js and React move together.",
+      "groupName": "Next.js and React",
+      "matchPackageNames": ["next", "react", "react-dom", "@types/react", "@types/react-dom"]
+    },
+    {
+      "description": "Security-patch overrides of the Spring Boot BOM: stay on the lines Spring Boot 3.5 supports. Remove these overrides with the Spring Boot 4 migration.",
+      "matchPackageNames": ["org.apache.tomcat.embed:tomcat-embed-core"],
+      "allowedVersions": "<11"
+    },
+    {
+      "matchPackageNames": ["com.fasterxml.jackson:jackson-bom"],
+      "allowedVersions": "<3"
+    },
+    {
+      "description": "Scanners and the dev-stack images are tooling: group them to keep PR noise down.",
+      "groupName": "Security scanner images",
+      "matchDatasources": ["docker"],
+      "matchPackageNames": ["zricethezav/gitleaks", "aquasec/trivy"]
+    },
+    {
+      "groupName": "GitHub Actions",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch", "digest", "pinDigest"]
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Patched versions pinned over the Spring Boot BOM in build.gradle.kts (extra[\"tomcat.version\"] = \"…\")",
+      "managerFilePatterns": ["/(^|/)build\\.gradle\\.kts$/"],
+      "matchStrings": ["extra\\[\"tomcat\\.version\"\\]\\s*=\\s*\"(?<currentValue>[^\"]+)\""],
+      "depNameTemplate": "org.apache.tomcat.embed:tomcat-embed-core",
+      "datasourceTemplate": "maven"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/(^|/)build\\.gradle\\.kts$/"],
+      "matchStrings": ["extra\\[\"jackson-bom\\.version\"\\]\\s*=\\s*\"(?<currentValue>[^\"]+)\""],
+      "depNameTemplate": "com.fasterxml.jackson:jackson-bom",
+      "datasourceTemplate": "maven"
+    },
+    {
+      "customType": "regex",
+      "managerFilePatterns": ["/(^|/)build\\.gradle\\.kts$/"],
+      "matchStrings": ["extra\\[\"postgresql\\.version\"\\]\\s*=\\s*\"(?<currentValue>[^\"]+)\""],
+      "depNameTemplate": "org.postgresql:postgresql",
+      "datasourceTemplate": "maven"
+    },
+    {
+      "customType": "regex",
+      "description": "Scanner images pinned in workflow env, e.g. TRIVY_IMAGE: aquasec/trivy:0.76.1@sha256:…",
+      "managerFilePatterns": ["/^\\.github/workflows/.+\\.ya?ml$/"],
+      "matchStrings": ["_IMAGE:\\s*(?<depName>[a-z0-9./_-]+):(?<currentValue>[^\\s@]+)@(?<currentDigest>sha256:[a-f0-9]{64})"],
+      "datasourceTemplate": "docker"
+    }
+  ]
+}

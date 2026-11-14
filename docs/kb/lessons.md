@@ -28,4 +28,6 @@ Things that cost time once. Add to this list whenever something surprises you.
   images show as "Interrupted". Check platforms with the registry API before pinning an image; amd64-only services go
   behind a profile with `platform: linux/amd64`.
 - **MinIO no longer publishes community container images** (Docker Hub repo gone); the dev stack uses SeaweedFS.
+- **Running Renovate locally** (`--platform=local --dry-run=extract`) needs Node 24 and only sees *committed* files —
+  an uncommitted `renovate.json` is silently ignored.
 - **Real people in fixtures:** early fixtures put invented quotes in real witnesses' mouths. Use fictional names.

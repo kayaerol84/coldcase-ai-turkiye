@@ -117,6 +117,9 @@ Key settings (environment variables): `MAX_UPLOAD_SIZE` (500MB), `MAX_PDF_PAGES`
 Read `CLAUDE.md` and the knowledge base in `docs/kb/` first (status, architecture, domain language, context map,
 invariants, security). Keep the knowledge base current in the same change.
 
+Dependencies are kept up to date by Renovate (`renovate.json`): it opens update PRs weekly and security fixes
+immediately; each PR runs CI and the Security workflow. Major upgrades wait for approval on the Dependency Dashboard issue.
+
 ## Tests
 
 API tests need a PostgreSQL at `DB_URL` (defaults to `localhost:5432/coldcase`, user/password `coldcase`):

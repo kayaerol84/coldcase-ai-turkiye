@@ -6,6 +6,7 @@ Architectural decisions get an ADR in `docs/adr/`. Smaller ones are logged here 
 - `docs/adr/0001-embedding-model.md` — Accepted: self-hosted embeddings only, BAAI/bge-m3 default, bake-off pending.
 
 ## Log
+- 2026-11-14 — Renovate (hosted GitHub App) for dependency updates: 14-day release age, majors need dashboard approval, no automerge.
 - 2026-11-14 — Dev object store: SeaweedFS 4.51 (multi-arch, S3 API with conditional writes) replaces MinIO; optional services behind compose profiles.
 - 2026-11-12 — Accept two Spring 6.2 CVEs (unused features) until 2026-12-31 via `.trivyignore.yaml`; Boot 4 migration before then.
 - 2026-11-12 — Gradle locking limited to shipped/test classpaths so scanners don't report build-tool internals.

@@ -1,6 +1,6 @@
 # Status
 
-_Last updated: 2026-11-14 (arm64-friendly dev stack, SeaweedFS replaces MinIO)_
+_Last updated: 2026-11-14 (Renovate dependency updates)_
 
 | Milestone | State | Notes |
 |---|---|---|
@@ -14,6 +14,7 @@ _Last updated: 2026-11-14 (arm64-friendly dev stack, SeaweedFS replaces MinIO)_
 | T6 Pilot hardening | Planned | MFA, rate limiting, malware scan, image scanning, load tests |
 
 ## Waiting on the product owner
+- Install the Renovate GitHub App on the repository (config is in `renovate.json`); Issues must be enabled for the Dependency Dashboard.
 - The TBMM Volume 2 PDF (T1 validation, eval questions, embedding bake-off).
 - Pinned bge-m3 revision (`EMBEDDINGS_MODEL_REVISION`) for shared environments.
 

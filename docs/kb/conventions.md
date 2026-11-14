@@ -24,8 +24,14 @@
   Drive the worker with `DocumentProcessor.drain(versionId)`.
 - Security tests carry `@Tag("security")`, live in `services/api/src/test/kotlin/tr/coldcase/api/security/`, and run via
   `./gradlew securityTest` (and in `check`). A new endpoint needs a rule in `AuthorizationMatrixTest`.
-- Dependencies: Gradle versions are locked in `services/api/gradle.lockfile` — after changing dependencies run
+- Dependencies are updated by **Renovate** (`renovate.json`): PRs on Monday mornings (Europe/Istanbul), security
+  fixes at any time, only releases at least 14 days old (security fixes exempt), weekly lockfile refresh, major
+  upgrades only after approval on the Dependency Dashboard issue. Every Renovate PR runs CI and the Security workflow;
+  merge only when both are green. Groups: Spring Boot, Kotlin, AWS SDK, Next.js + React, GitHub Actions, scanner images.
+- Manual dependency changes follow the same rules: Gradle versions are locked in `services/api/gradle.lockfile` — run
   `./gradlew dependencies --write-locks` and commit the lockfile. Pick releases at least two weeks old.
+- Versions written outside standard manifests (Gradle `extra[...]` overrides, `*_IMAGE` env in workflows) need a
+  `customManagers` entry in `renovate.json`, or Renovate won't see them.
 - A scanner finding is fixed by upgrading. Only if no fix exists *and* the code can't reach it, add it to
   `.trivyignore.yaml` with a statement and `expired_at`, and list it under "Accepted risks" in `docs/kb/security.md`.
 - Use **fictional people** in fixtures; generate PDFs with `TestPdfs`.
