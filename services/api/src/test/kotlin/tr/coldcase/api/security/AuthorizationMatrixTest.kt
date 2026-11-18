@@ -8,7 +8,7 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.http.HttpMethod
 import org.springframework.http.MediaType
 import org.springframework.mock.web.MockMultipartFile
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder
+import org.springframework.test.web.servlet.RequestBuilder
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.request
 import org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping
@@ -79,19 +79,20 @@ class AuthorizationMatrixTest : ApiTestBase() {
         assertThat(stale).describedAs("Rules for endpoints that no longer exist").isEmpty()
     }
 
-    private fun build(method: HttpMethod, pattern: String, ctx: Ctx, rule: Rule): MockHttpServletRequestBuilder {
+    private fun build(method: HttpMethod, pattern: String, ctx: Ctx, rule: Rule, user: TestUser? = null): RequestBuilder {
         val uri = pattern
             .replace("{caseId}", ctx.caseId).replace("{documentId}", ctx.documentId)
             .replace("{pageNumber}", "1").replace("{userId}", ctx.victimId)
         if (rule.multipart) {
-            return multipart(uri).file(MockMultipartFile("file", "a.pdf", "application/pdf", TestPdfs.build(listOf(TextPage(listOf("Kurgusal tutanak metni burada."))))))
+            val m = multipart(uri).file(MockMultipartFile("file", "a.pdf", "application/pdf", TestPdfs.build(listOf(TextPage(listOf("Kurgusal tutanak metni burada."))))))
+            return if (user != null) m.asUser(user) else m
         }
         val b = request(method, uri)
         rule.body(ctx)?.let { b.contentType(MediaType.APPLICATION_JSON).content(json(it)) }
-        return b
+        return if (user != null) b.asUser(user) else b
     }
 
-    private fun status(b: MockHttpServletRequestBuilder) = mvc.perform(b).andReturn().response.status
+    private fun status(b: RequestBuilder) = mvc.perform(b).andReturn().response.status
 
     @Test
     fun `access matrix holds for every endpoint and role`() {
@@ -126,10 +127,10 @@ class AuthorizationMatrixTest : ApiTestBase() {
             val key = "${method.name()} $pattern"
             expect("$key unauthenticated", status(build(method, pattern, ctx, rule)), { it == 401 }, "401")
             if (rule.minRole == null) continue
-            expect("$key outsider", status(build(method, pattern, ctx, rule).asUser(outsider)), { it == 404 }, "404")
+            expect("$key outsider", status(build(method, pattern, ctx, rule, outsider)), { it == 404 }, "404")
             for ((role, user) in members) {
                 if (role.ordinal < rule.minRole.ordinal) {
-                    expect("$key as $role", status(build(method, pattern, ctx, rule).asUser(user)), { it == 403 }, "403")
+                    expect("$key as $role", status(build(method, pattern, ctx, rule, user)), { it == 403 }, "403")
                 }
             }
         }
@@ -138,15 +139,15 @@ class AuthorizationMatrixTest : ApiTestBase() {
             val rule = rules["${method.name()} $pattern"] ?: continue
             val key = "${method.name()} $pattern"
             if (rule.minRole == null) {
-                expect("$key outsider (any authenticated user)", status(build(method, pattern, ctx, rule).asUser(outsider)), allowedOk, "allowed")
+                expect("$key outsider (any authenticated user)", status(build(method, pattern, ctx, rule, outsider)), allowedOk, "allowed")
                 continue
             }
             if (method != HttpMethod.DELETE) {
                 for ((role, user) in members) if (role.ordinal >= rule.minRole.ordinal) {
-                    expect("$key as $role", status(build(method, pattern, ctx, rule).asUser(user)), allowedOk, "allowed")
+                    expect("$key as $role", status(build(method, pattern, ctx, rule, user)), allowedOk, "allowed")
                 }
             }
-            expect("$key as CASE_ADMIN", status(build(method, pattern, ctx, rule).asUser(owner)), allowedOk, "allowed")
+            expect("$key as CASE_ADMIN", status(build(method, pattern, ctx, rule, owner)), allowedOk, "allowed")
         }
         assertThat(failures).describedAs(failures.joinToString("\n")).isEmpty()
     }

@@ -1,6 +1,6 @@
 package tr.coldcase.api.indexing
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
 import java.time.OffsetDateTime

@@ -1,6 +1,6 @@
 package tr.coldcase.api.embeddings
 
-import com.fasterxml.jackson.databind.JsonNode
+import tools.jackson.databind.JsonNode
 import org.slf4j.LoggerFactory
 import org.springframework.http.MediaType
 import org.springframework.http.client.SimpleClientHttpRequestFactory

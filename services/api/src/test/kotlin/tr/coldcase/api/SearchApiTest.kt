@@ -1,6 +1,6 @@
 package tr.coldcase.api
 
-import com.fasterxml.jackson.databind.JsonNode
+import tools.jackson.databind.JsonNode
 import org.assertj.core.api.Assertions.assertThat
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.Test
@@ -53,7 +53,7 @@ class SearchApiTest : ApiTestBase() {
                 .andExpect(status().isOk).andReturn().response.contentAsString
         )
 
-    private fun pagesOf(r: JsonNode) = r["results"].map { it["pdfPageNumber"].asInt() }
+    private fun pagesOf(r: JsonNode) = r["results"].values().map { it["pdfPageNumber"].asInt() }
 
     @Test
     fun `indexing runs after extraction and records chunker and model`() {
@@ -89,7 +89,7 @@ class SearchApiTest : ApiTestBase() {
         val hit = r["results"][0]
         val h = hit["highlights"][0]
         assertThat(hit["text"].asText().substring(h["start"].asInt(), h["end"].asInt())).isEqualTo("diskler evden alındı")
-        assertThat(hit["matchedBy"].map { it.asText() }).containsExactly("EXACT_PHRASE")
+        assertThat(hit["matchedBy"].values().map { it.asText() }).containsExactly("EXACT_PHRASE")
         assertThat(search(owner, caseId, mapOf("query" to "diskler evde yandı", "mode" to "EXACT"))["results"]).isEmpty()
     }
 
@@ -106,7 +106,7 @@ class SearchApiTest : ApiTestBase() {
         assertThat(top["printedPageLabel"].asText()).isEqualTo("1426")
         assertThat(top["documentId"].asText()).isEqualTo(docId)
         assertThat(top["sourceKind"].asText()).isEqualTo("EMBEDDED_TEXT")
-        assertThat(top["matchedBy"].map { it.asText() }).contains("KEYWORD", "SEMANTIC")
+        assertThat(top["matchedBy"].values().map { it.asText() }).contains("KEYWORD", "SEMANTIC")
         assertThat(top["diagnostics"]["fusedScore"].asDouble()).isPositive()
         // Highlights point at real text in the segment.
         top["highlights"].forEach {
@@ -119,7 +119,7 @@ class SearchApiTest : ApiTestBase() {
 
         val quoted = search(owner, caseId, mapOf("query" to "diskler \"teslim etmedim\""))
         assertThat(quoted["results"][0]["pdfPageNumber"].asInt()).isEqualTo(3)
-        assertThat(quoted["results"][0]["matchedBy"].map { it.asText() }).contains("EXACT_PHRASE")
+        assertThat(quoted["results"][0]["matchedBy"].values().map { it.asText() }).contains("EXACT_PHRASE")
     }
 
     @Test
@@ -135,7 +135,7 @@ class SearchApiTest : ApiTestBase() {
         val speakers = search(owner, caseId, mapOf("query" to "telefon kayıtları diskler"))["results"]
             .filter { it["pdfPageNumber"].asInt() == 1 }.map { it["speaker"].asText() }
         assertThat(speakers).contains("BAŞKAN")
-        assertThat(search(owner, caseId, mapOf("query" to "diskler", "filters" to mapOf("speaker" to "ozturk")))["results"].map { it["speaker"].asText() })
+        assertThat(search(owner, caseId, mapOf("query" to "diskler", "filters" to mapOf("speaker" to "ozturk")))["results"].values().map { it["speaker"].asText() })
             .containsOnly("NAZMİ ÖZTÜRK")
     }
 
@@ -145,9 +145,9 @@ class SearchApiTest : ApiTestBase() {
         val caseId = createCase(owner)
         val d1 = ingest(owner, caseId)
         ingest(owner, caseId, listOf(TextPage(listOf("BAŞKAN — Diskler başka bir tutanakta da geçiyor."))))
-        assertThat(search(owner, caseId, mapOf("query" to "diskler", "mode" to "KEYWORD"))["results"].map { it["documentId"].asText() }.toSet()).hasSize(2)
+        assertThat(search(owner, caseId, mapOf("query" to "diskler", "mode" to "KEYWORD"))["results"].values().map { it["documentId"].asText() }.toSet()).hasSize(2)
         val onlyD1 = search(owner, caseId, mapOf("query" to "diskler", "mode" to "KEYWORD", "filters" to mapOf("documentIds" to listOf(d1))))
-        assertThat(onlyD1["results"].map { it["documentId"].asText() }).containsOnly(d1)
+        assertThat(onlyD1["results"].values().map { it["documentId"].asText() }).containsOnly(d1)
         val range = search(owner, caseId, mapOf("query" to "diskler", "mode" to "KEYWORD", "filters" to mapOf("documentIds" to listOf(d1), "pdfPageFrom" to 3, "pdfPageTo" to 3)))
         assertThat(pagesOf(range)).containsOnly(3)
     }
@@ -166,7 +166,7 @@ class SearchApiTest : ApiTestBase() {
         for (mode in listOf("HYBRID", "KEYWORD", "SEMANTIC", "EXACT")) {
             val r = search(owner, caseA, mapOf("query" to "diskler", "mode" to mode))
             assertThat(r["results"]).isNotEmpty
-            val docCases = r["results"].map { it["documentId"].asText() }.toSet().map { d ->
+            val docCases = r["results"].values().map { it["documentId"].asText() }.toSet().map { d ->
                 readJson(mvc.perform(get("/api/v1/documents/$d").asUser(owner)).andExpect(status().isOk).andReturn().response.contentAsString)["caseId"].asText()
             }
             assertThat(docCases).containsOnly(caseA)

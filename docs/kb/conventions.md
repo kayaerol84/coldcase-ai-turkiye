@@ -9,6 +9,11 @@
 - External systems only behind a port (`ObjectStore`, `EmbeddingProvider`, `OcrEngine`, future `LlmProvider`).
 - Record versions of everything derived: extractor, OCR engine, chunker, embedding model (TR §3.7).
 
+- **Jackson 3** (`tools.jackson.*`): `JsonNode.map(fn)` is a *member* that applies `fn` to the node itself, and Kotlin
+  prefers it over the collection extension — to transform array elements write `node.values().map { … }`.
+- Spring 7 APIs carry JSpecify nullness: e.g. `JdbcClient.query(Int::class.java)` yields `List<Int?>`; map rows
+  explicitly (`query { rs, _ -> rs.getInt(1) }`) when you need non-null values.
+
 ## Database
 - Flyway migrations are append-only: never edit a released `V*__*.sql`; add a new version.
 - Every case-owned table has `case_id`. Every source-derived row keeps `document_id`/`page_id`.

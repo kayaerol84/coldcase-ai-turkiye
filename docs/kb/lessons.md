@@ -30,4 +30,11 @@ Things that cost time once. Add to this list whenever something surprises you.
 - **MinIO no longer publishes community container images** (Docker Hub repo gone); the dev stack uses SeaweedFS.
 - **Running Renovate locally** (`--platform=local --dry-run=extract`) needs Node 24 and only sees *committed* files —
   an uncommitted `renovate.json` is silently ignored.
+- **Spring Boot 4 migration:** starters are per module (`spring-boot-starter-webmvc`,
+  `-security-oauth2-resource-server`, `-flyway`, `-micrometer-metrics`, test: `-webmvc-test`, `-security-test`);
+  `AutoConfigureMockMvc` moved to `org.springframework.boot.webmvc.test.autoconfigure`; multipart request builders no
+  longer extend `MockHttpServletRequestBuilder`. After changing dependencies, a "not part of the dependency lock state"
+  error means: run `./gradlew dependencies --write-locks` — it is not a download failure.
+- **Jackson 3 `JsonNode.map`** silently changed meaning in Kotlin (member beats extension); some calls still compiled
+  with a different result type (`String` instead of `List`). Grep for `].map {` on JSON nodes when upgrading.
 - **Real people in fixtures:** early fixtures put invented quotes in real witnesses' mouths. Use fictional names.

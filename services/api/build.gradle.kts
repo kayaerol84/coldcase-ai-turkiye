@@ -1,8 +1,8 @@
 plugins {
-    id("org.springframework.boot") version "3.5.16"
+    id("org.springframework.boot") version "4.1.2"
     id("io.spring.dependency-management") version "1.1.7"
-    kotlin("jvm") version "2.2.20"
-    kotlin("plugin.spring") version "2.2.20"
+    kotlin("jvm") version "2.3.21"
+    kotlin("plugin.spring") version "2.3.21"
 }
 
 group = "tr.coldcase"
@@ -12,23 +12,18 @@ java { toolchain { languageVersion = JavaLanguageVersion.of(21) } }
 
 repositories { mavenCentral() }
 
-// Security patch overrides of Spring Boot's managed versions (see docs/kb/security.md). Remove each when the
-// Spring Boot BOM catches up, or with the Spring Boot 4 migration.
-extra["tomcat.version"] = "10.1.60"
-extra["jackson-bom.version"] = "2.21.7"
-extra["postgresql.version"] = "42.7.12"
-
 dependencies {
-    implementation("org.springframework.boot:spring-boot-starter-web")
+    // Spring Boot 4 modules: each feature has its own starter (auto-configuration is no longer one big jar).
+    implementation("org.springframework.boot:spring-boot-starter-webmvc")
     implementation("org.springframework.boot:spring-boot-starter-validation")
     implementation("org.springframework.boot:spring-boot-starter-jdbc")
-    implementation("org.springframework.boot:spring-boot-starter-security")
-    implementation("org.springframework.boot:spring-boot-starter-oauth2-resource-server")
+    implementation("org.springframework.boot:spring-boot-starter-security-oauth2-resource-server")
     implementation("org.springframework.boot:spring-boot-starter-actuator")
-    implementation("org.flywaydb:flyway-core")
+    implementation("org.springframework.boot:spring-boot-starter-micrometer-metrics")
+    implementation("org.springframework.boot:spring-boot-starter-flyway")
     implementation("org.flywaydb:flyway-database-postgresql")
-    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:2.8.13")
-    implementation("com.fasterxml.jackson.module:jackson-module-kotlin")
+    implementation("org.springdoc:springdoc-openapi-starter-webmvc-ui:3.2.0")
+    implementation("tools.jackson.module:jackson-module-kotlin")
     implementation("org.jetbrains.kotlin:kotlin-reflect")
     implementation("org.apache.pdfbox:pdfbox:3.0.8")
     implementation(platform("software.amazon.awssdk:bom:2.39.6"))
@@ -41,7 +36,8 @@ dependencies {
     runtimeOnly("org.postgresql:postgresql")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")
-    testImplementation("org.springframework.security:spring-security-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-webmvc-test")
+    testImplementation("org.springframework.boot:spring-boot-starter-security-test")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

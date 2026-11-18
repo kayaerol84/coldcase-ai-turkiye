@@ -1,12 +1,13 @@
 # Status
 
-_Last updated: 2026-11-14 (Renovate dependency updates)_
+_Last updated: 2026-11-18 (Spring Boot 4 migration)_
 
 | Milestone | State | Notes |
 |---|---|---|
 | T0 Foundation | Done | OIDC login, cases, RBAC, members, append-only audit |
 | T1 Ingestion | Done* | *Not yet validated on the real TBMM Volume 2 PDF |
 | T2 Retrieval & viewer | Done* | *Real bge-m3 never run here (no model download); bake-off pending |
+| Spring Boot 4 migration | Done | Boot 4.1.2, Spring 7.0.10, Security 7.1, Jackson 3, Kotlin 2.3.21; no accepted CVEs left |
 | Security pipeline | Done (first pass) | gitleaks, Trivy + npm audit, 13 security tests, web headers; see `security.md` |
 | T3 Source-grounded Q&A | Next | Citation validation, abstention, prompt-injection defences |
 | T4 Investigation workflow | Planned | Statements, comparisons, findings, leads |
@@ -19,9 +20,8 @@ _Last updated: 2026-11-14 (Renovate dependency updates)_
 - Pinned bge-m3 revision (`EMBEDDINGS_MODEL_REVISION`) for shared environments.
 
 ## Known debt
-- **Spring Boot 3.5 line → Boot 4 migration due by 2026-12-31.** 3.5.16 is the last 3.5 patch; two Spring
-  Framework 6.2 CVEs have no open-source fix and are accepted only until then (`.trivyignore.yaml`).
-  Tomcat/Jackson/Postgres driver are pinned to patched versions in `services/api/build.gradle.kts`.
+- Local API tests and the local dev app share the `coldcase` database; tests leave queued jobs whose files are gone,
+  and a running dev worker retries them (harmless warnings). Give tests their own database.
 - Context cycle `documents ↔ processing ↔ indexing`; `indexing → search` for `TurkishText`.
   See `domain/context-map.md` §Known debt. Pinned by `ContextBoundariesTest`.
 - No Dockerfiles yet, so no container image scanning (T6).

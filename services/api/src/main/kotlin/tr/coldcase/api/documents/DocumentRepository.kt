@@ -1,6 +1,6 @@
 package tr.coldcase.api.documents
 
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.ObjectMapper
 import org.springframework.jdbc.core.RowMapper
 import org.springframework.jdbc.core.simple.JdbcClient
 import org.springframework.stereotype.Repository
@@ -242,7 +242,7 @@ class DocumentRepository(private val jdbc: JdbcClient, private val mapper: Objec
 
     fun pageNumbersWithStatus(versionId: UUID, status: PageStatus): List<Int> =
         jdbc.sql("SELECT pdf_page_number FROM pages WHERE document_version_id = :v AND extraction_status = :s ORDER BY pdf_page_number")
-            .param("v", versionId).param("s", status.name).query(Int::class.java).list()
+            .param("v", versionId).param("s", status.name).query { rs, _ -> rs.getInt(1) }.list()
 
     fun pages(versionId: UUID): List<PageSummary> =
         jdbc.sql("SELECT * FROM pages WHERE document_version_id = :v ORDER BY pdf_page_number")

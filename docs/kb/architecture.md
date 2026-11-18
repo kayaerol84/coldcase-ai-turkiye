@@ -4,7 +4,7 @@ Monorepo. One deployable backend (modular monolith), one web app, local infra vi
 
 | Path | What |
 |---|---|
-| `services/api` | Kotlin 2.2 + Spring Boot 3.5, JDBC (`JdbcClient`, no ORM), Flyway, PostgreSQL 16 + pgvector + pg_trgm |
+| `services/api` | Kotlin 2.3 + Spring Boot 4.1 (Spring Framework 7, Spring Security 7, Jackson 3), JDBC (`JdbcClient`, no ORM), Flyway, PostgreSQL 16 + pgvector + pg_trgm |
 | `apps/web` | Next.js 15 (app router, client components), TypeScript, oidc-client-ts (PKCE) |
 | `infra/docker/docker-compose.yml` | Dev stack bound to localhost: Postgres+pgvector and Keycloak by default; profiles `s3` (SeaweedFS, host port 9000) and `embeddings` (TEI, amd64 only) |
 | `evals/` | Retrieval/citation benchmark format (questions pending the real PDF) |

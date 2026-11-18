@@ -1,13 +1,13 @@
 package tr.coldcase.api
 
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.ObjectMapper
+import tools.jackson.databind.JsonNode
+import tools.jackson.databind.ObjectMapper
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.TestConfiguration
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Import
 import org.springframework.context.annotation.Primary
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.http.MediaType
 import org.springframework.jdbc.core.simple.JdbcClient
@@ -17,7 +17,7 @@ import org.springframework.test.context.DynamicPropertyRegistry
 import org.springframework.test.context.DynamicPropertySource
 import org.springframework.test.context.bean.override.mockito.MockitoBean
 import org.springframework.test.web.servlet.MockMvc
-import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder
+import org.springframework.test.web.servlet.request.AbstractMockHttpServletRequestBuilder
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath
@@ -46,7 +46,8 @@ abstract class ApiTestBase {
         val email = "$sub@example.org"
     }
 
-    fun MockHttpServletRequestBuilder.asUser(u: TestUser): MockHttpServletRequestBuilder =
+    /** Authenticates any MockMvc request builder (plain or multipart) as [u]. */
+    fun <B : AbstractMockHttpServletRequestBuilder<B>> B.asUser(u: TestUser): B =
         with(jwt().jwt { it.subject(u.sub).claim("email", u.email).claim("name", "User ${u.sub.takeLast(4)}") })
 
     fun json(body: Any): String = mapper.writeValueAsString(body)

@@ -141,7 +141,8 @@ class DocumentProcessor(
     private fun ocrPages(job: Job) {
         val version = documents.findVersion(job.documentVersionId)
             ?: throw PermanentProcessingException("VERSION_MISSING", "Document version not found")
-        val pages = job.payload["pages"]?.map { it.asInt() }.orEmpty()
+        val pagesNode = job.payload.get("pages")
+        val pages: List<Int> = if (pagesNode == null || !pagesNode.isArray) emptyList() else (0 until pagesNode.size()).map { pagesNode.get(it).asInt() }
         if (!ocr.available) {
             documents.markPagesError(version.id, pages, "OCR_UNAVAILABLE")
             throw PermanentProcessingException("OCR_UNAVAILABLE", "OCR engine '${ocr.name}' is not installed")
