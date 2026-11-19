@@ -28,11 +28,22 @@ If you need a new term, add it here in the same change. Don't introduce synonyms
 | Processing job | İşlem | Async unit of work: `EXTRACT_DOCUMENT`, `OCR_PAGES`, `INDEX_DOCUMENT` |
 | Index | Arama dizini | Segments + full-text vectors + embeddings for a document version |
 
-## Research (T3–T5, from the requirements; not yet implemented)
+## Q&A (T3)
 | English (code) | Türkçe (UI) | Meaning |
 |---|---|---|
-| Answer | Yanıt | AI-drafted answer, status `AI_DRAFT` until reviewed |
-| Citation | Kaynak gösterimi | Link from an answer/finding/report to a segment; must map to a retrieved segment |
+| Question | Soru | What a researcher asks about one case |
+| Answer | Yanıt | AI-drafted answer, `review_status = AI_DRAFT` until reviewed; outcome `ANSWERED` or `ABSTAINED` |
+| Abstention | Yanıt verilmedi | The system declines to answer: no passages, insufficient support, nothing verifiable, or model refusal |
+| Claim | İfade | One statement in an answer, with ≥1 citation; kind `SOURCE_STATEMENT` (Kaynak beyanı: someone said it) or `DOCUMENTED_FACT` (Belgede kayıtlı) |
+| Citation | Kaynak gösterimi / alıntı | Link from a claim (later: finding, report) to a retrieved segment with a verbatim quote and page offsets |
+| Citation report | Alıntı bildirimi | Researcher flag that a citation does not support its claim |
+| Limitation | Sınırlama | Caveat attached to an answer (OCR text, inferred speaker, removed claims, model notes) |
+| Conflict | Kaynaklar arasındaki fark | Passages that differ on a point, described neutrally (not a "contradiction" verdict) |
+| Prompt version | İstem sürümü | `QaPrompt.VERSION`; recorded on every answer with provider and model |
+
+## Research (T4–T5, from the requirements; not yet implemented)
+| English (code) | Türkçe (UI) | Meaning |
+|---|---|---|
 | Statement | Beyan | Attributed claim extracted from a source, qualifiers preserved |
 | Statement comparison | Beyan karşılaştırması | Reviewed relationship between statements (TR §7.2 categories) |
 | Finding | Bulgu | Research conclusion with source references and a classification label |

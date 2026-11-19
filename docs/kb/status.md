@@ -1,6 +1,6 @@
 # Status
 
-_Last updated: 2026-11-18 (Spring Boot 4 migration)_
+_Last updated: 2026-11-19 (T3 source-grounded Q&A)_
 
 | Milestone | State | Notes |
 |---|---|---|
@@ -9,12 +9,13 @@ _Last updated: 2026-11-18 (Spring Boot 4 migration)_
 | T2 Retrieval & viewer | Done* | *Real bge-m3 never run here (no model download); bake-off pending |
 | Spring Boot 4 migration | Done | Boot 4.1.2, Spring 7.0.10, Security 7.1, Jackson 3, Kotlin 2.3.21; no accepted CVEs left |
 | Security pipeline | Done (first pass) | gitleaks, Trivy + npm audit, 13 security tests, web headers; see `security.md` |
-| T3 Source-grounded Q&A | Next | Citation validation, abstention, prompt-injection defences |
+| T3 Source-grounded Q&A | Done* | *Switched off until ADR 0002 (LLM provider) is accepted; tested with a scripted model only, never against a real model or the real PDF |
 | T4 Investigation workflow | Planned | Statements, comparisons, findings, leads |
 | T5 Reporting & audit UI | Planned | |
 | T6 Pilot hardening | Planned | MFA, rate limiting, malware scan, image scanning, load tests |
 
 ## Waiting on the product owner
+- Decide ADR 0002 (LLM provider) and, if Anthropic, provide `ANTHROPIC_API_KEY` for the demo environment.
 - Install the Renovate GitHub App on the repository (config is in `renovate.json`); Issues must be enabled for the Dependency Dashboard.
 - The TBMM Volume 2 PDF (T1 validation, eval questions, embedding bake-off).
 - Pinned bge-m3 revision (`EMBEDDINGS_MODEL_REVISION`) for shared environments.
@@ -31,4 +32,8 @@ _Last updated: 2026-11-18 (Spring Boot 4 migration)_
 - Presigned direct-to-bucket uploads not implemented (multipart through the API).
 - Real Keycloak not yet exercised by an automated test (no Docker in the agent environment); the S3 path is tested
   in CI against SeaweedFS (`S3ObjectStoreIntegrationTest`; CI fails if those tests are skipped).
+- Q&A: no answer-quality evaluation yet (needs the real PDF + eval questions in `evals/`); no streaming of answers
+  (a question takes up to a minute); citation offsets point into the page text as it was when asked — re-OCR of
+  that page can shift them (the stored quote stays correct).
+- Q&A has no per-user rate limit or cost cap yet (T6).
 - Embedding server has no native arm64 image: Apple Silicon developers run it emulated or natively via TEI's Metal build.

@@ -88,3 +88,21 @@ app:
     candidates-per-method: 50
     default-limit: 20
     max-limit: 50
+  qa:
+    max-question-length: 500
+    passages: 12
+    min-quote-chars: 8
+    max-claims: 20
+  llm:
+    # none: Q&A switched off (default). anthropic: Claude API. Passages from the case are sent to the provider,
+    # so only enable a provider accepted in docs/adr/0002-llm-provider.md.
+    provider: ${LLM_PROVIDER:none}
+    model: ${LLM_MODEL:claude-opus-5-5}
+    effort: ${LLM_EFFORT:high}
+    max-tokens: 16000
+    timeout: ${LLM_TIMEOUT:180s}
+    max-retries: 2
+    inference-geo: ${LLM_INFERENCE_GEO:}
+    anthropic:
+      api-key: ${ANTHROPIC_API_KEY:}
+      base-url: ${ANTHROPIC_BASE_URL:}

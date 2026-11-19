@@ -11,7 +11,42 @@ data class AppProperties(
     val extraction: Extraction = Extraction(),
     val embeddings: Embeddings = Embeddings(),
     val search: Search = Search(),
+    val qa: Qa = Qa(),
+    val llm: Llm = Llm(),
 ) {
+    data class Qa(
+        /** Questions are also the retrieval query, so this must not exceed search.maxQueryLength. */
+        val maxQuestionLength: Int = 500,
+        /** Passages retrieved and shown to the model per question. */
+        val passages: Int = 12,
+        /** Shorter quotes are rejected: they verify too easily to show that the passage supports the claim. */
+        val minQuoteChars: Int = 8,
+        val maxClaims: Int = 20,
+    )
+
+    data class Llm(
+        /**
+         * none (Q&A switched off) | anthropic (Claude API). Sending passages to a provider sends case content
+         * to it: only enable a provider accepted in docs/adr/0002-llm-provider.md.
+         */
+        val provider: String = "none",
+        val model: String = "claude-opus-5-5",
+        /** low | medium | high | xhigh | max. Grounded answering with citations is intelligence-sensitive. */
+        val effort: String = "high",
+        val maxTokens: Int = 16000,
+        val timeout: Duration = Duration.ofSeconds(180),
+        val maxRetries: Int = 2,
+        /** Where the provider may run inference ("us" or "global" on the Anthropic API). Empty = provider default. */
+        val inferenceGeo: String = "",
+        val anthropic: Anthropic = Anthropic(),
+    )
+
+    data class Anthropic(
+        val apiKey: String = "",
+        /** Override for tests or a gateway; empty = the SDK default. */
+        val baseUrl: String = "",
+    )
+
     data class Embeddings(
         /** none (keyword search only) | tei (self-hosted Text Embeddings Inference). Document text never leaves our infrastructure. */
         val provider: String = "none",

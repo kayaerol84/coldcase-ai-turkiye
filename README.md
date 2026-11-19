@@ -108,9 +108,23 @@ an external API (see `docs/adr/0001-embedding-model.md`).
 PostgreSQL needs the `vector` and `pg_trgm` extensions. The compose image has them; elsewhere a
 database administrator may need to run `CREATE EXTENSION vector;` once before migrations.
 
+### Asking questions (Q&A)
+
+`/cases/{id}/ask` drafts answers from the case's documents, with verbatim citations that are checked against the
+retrieved passages. It is **off by default** (`LLM_PROVIDER=none`): the question and the retrieved passages would
+be sent to a language model provider, and that needs `docs/adr/0002-llm-provider.md` to be accepted first.
+With an accepted provider and only for public material such as the TBMM demo corpus:
+
+```bash
+LLM_PROVIDER=anthropic ANTHROPIC_API_KEY=… ./gradlew bootRun
+```
+
+Defaults: model `claude-opus-5-5` (`LLM_MODEL`), effort `high` (`LLM_EFFORT`), timeout 180 s (`LLM_TIMEOUT`).
+
 Key settings (environment variables): `MAX_UPLOAD_SIZE` (500MB), `MAX_PDF_PAGES` (5000),
 `WORKER_ENABLED` (true), `OCR_LANGUAGES` (`tur`), `S3_*`, `S3_SSE` (enable in production),
-`EMBEDDINGS_PROVIDER` (`none`|`tei`), `EMBEDDINGS_URL`, `EMBEDDINGS_API_KEY`, `EMBEDDINGS_MODEL_REVISION`.
+`EMBEDDINGS_PROVIDER` (`none`|`tei`), `EMBEDDINGS_URL`, `EMBEDDINGS_API_KEY`, `EMBEDDINGS_MODEL_REVISION`,
+`LLM_PROVIDER` (`none`|`anthropic`), `ANTHROPIC_API_KEY`, `LLM_MODEL`, `LLM_EFFORT`, `LLM_INFERENCE_GEO`.
 
 ## Working on this repo
 

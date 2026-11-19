@@ -4,8 +4,13 @@ Architectural decisions get an ADR in `docs/adr/`. Smaller ones are logged here 
 
 ## ADRs
 - `docs/adr/0001-embedding-model.md` — Accepted: self-hosted embeddings only, BAAI/bge-m3 default, bake-off pending.
+- `docs/adr/0002-llm-provider.md` — Proposed: LLM for Q&A (Anthropic API for the public demo; EU-region cloud or self-hosted for private material). Q&A off until accepted.
 
 ## Log
+- 2026-11-19 — Q&A answers and AI drafts need RESEARCH_WRITE (Researcher+); Viewers will see reviewed findings in T4.
+- 2026-11-19 — Citations are snapshots (no FK to `text_segments`) so answers survive re-indexing.
+- 2026-11-19 — Claude via the official Java SDK, non-streaming, structured output, effort `high`; server-side model fallbacks off (provenance).
+- 2026-11-19 — Speaker attribution of claims is derived from cited passages, not taken from the model.
 - 2026-11-18 — Migrated to Spring Boot 4.1.2 (modular starters, Jackson 3, springdoc 3.2); version overrides and accepted CVEs removed.
 - 2026-11-14 — Renovate (hosted GitHub App) for dependency updates: 14-day release age, majors need dashboard approval, no automerge.
 - 2026-11-14 — Dev object store: SeaweedFS 4.51 (multi-arch, S3 API with conditional writes) replaces MinIO; optional services behind compose profiles.

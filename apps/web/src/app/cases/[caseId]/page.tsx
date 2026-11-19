@@ -54,6 +54,17 @@ function CaseDetail({ caseId }: { caseId: string }) {
         </div>
         <Link className="btn primary" href={`/cases/${caseId}/search`}>Belgelerde ara</Link>
       </section>
+      {c.myRole !== "VIEWER" && (
+        <section className="card row between">
+          <div>
+            <h2 className="h2">Soru sor</h2>
+            <p className="muted small" style={{ margin: 0 }}>
+              Belgelere dayalı, alıntılı taslak yanıt. Her ifade kaynağındaki sayfaya bağlanır; yanıtlar doğrulanmış bulgu değildir.
+            </p>
+          </div>
+          <Link className="btn" href={`/cases/${caseId}/ask`}>Soru sor</Link>
+        </section>
+      )}
       <DocumentsSection caseId={caseId} canUpload={isAdmin} />
       <Members caseId={caseId} canManage={isAdmin} />
     </>

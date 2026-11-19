@@ -36,7 +36,7 @@ class AuthorizationMatrixTest : ApiTestBase() {
     /** null minRole = any authenticated user, not case-scoped. */
     private data class Rule(val minRole: CaseRole?, val body: (Ctx) -> Any? = { null }, val multipart: Boolean = false)
 
-    private class Ctx(val caseId: String, val documentId: String, val victim: ApiTestBase.TestUser, val victimId: String)
+    private class Ctx(val caseId: String, val documentId: String, val victim: ApiTestBase.TestUser, val victimId: String, val answerId: String, val citationId: String)
 
     private val rules: Map<String, Rule> = mapOf(
         // API schema: authenticated users only (PUBLIC_API_DOCS=true opens it for local development).
@@ -62,6 +62,12 @@ class AuthorizationMatrixTest : ApiTestBase() {
         "GET /api/v1/documents/{documentId}/reports" to Rule(CaseRole.VIEWER),
         "GET /api/v1/documents/{documentId}/file" to Rule(CaseRole.VIEWER),
         "POST /api/v1/documents/{documentId}/reprocess" to Rule(CaseRole.CASE_ADMIN),
+        // Q&A: AI drafts are research material, so even reading them needs RESEARCH_WRITE (Researcher and up).
+        "GET /api/v1/qa/status" to Rule(null),
+        "POST /api/v1/cases/{caseId}/questions" to Rule(CaseRole.RESEARCHER, { mapOf("question" to "Tanık ne söyledi?") }),
+        "GET /api/v1/cases/{caseId}/answers" to Rule(CaseRole.RESEARCHER),
+        "GET /api/v1/answers/{answerId}" to Rule(CaseRole.RESEARCHER),
+        "POST /api/v1/answers/{answerId}/citations/{citationId}/reports" to Rule(CaseRole.RESEARCHER, { mapOf("kind" to "OTHER") }),
     )
 
     private fun endpoints(): List<Pair<HttpMethod, String>> =
@@ -83,6 +89,7 @@ class AuthorizationMatrixTest : ApiTestBase() {
         val uri = pattern
             .replace("{caseId}", ctx.caseId).replace("{documentId}", ctx.documentId)
             .replace("{pageNumber}", "1").replace("{userId}", ctx.victimId)
+            .replace("{answerId}", ctx.answerId).replace("{citationId}", ctx.citationId)
         if (rule.multipart) {
             val m = multipart(uri).file(MockMultipartFile("file", "a.pdf", "application/pdf", TestPdfs.build(listOf(TextPage(listOf("Kurgusal tutanak metni burada."))))))
             return if (user != null) m.asUser(user) else m
@@ -112,7 +119,11 @@ class AuthorizationMatrixTest : ApiTestBase() {
         val doc = readJson(upload.response.contentAsString)
         processor.drain(UUID.fromString(doc["file"]["versionId"].asText()))
         val victimId = jdbc.sql("SELECT id FROM users WHERE oidc_subject = :s").param("s", victim.sub).query(UUID::class.java).single().toString()
-        val ctx = Ctx(caseId, doc["id"].asText(), victim, victimId)
+        val answer = readJson(mvc.perform(
+            request(HttpMethod.POST, "/api/v1/cases/$caseId/questions").asUser(owner).contentType(MediaType.APPLICATION_JSON)
+                .content(json(mapOf("question" to "Tanık ifadesi ne diyor?")))
+        ).andReturn().response.contentAsString)
+        val ctx = Ctx(caseId, doc["id"].asText(), victim, victimId, answer["id"].asText(), answer["claims"][0]["citations"][0]["id"].asText())
 
         val failures = mutableListOf<String>()
         fun expect(label: String, actual: Int, ok: (Int) -> Boolean, want: String) {

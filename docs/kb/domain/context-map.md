@@ -10,18 +10,20 @@ Bounded contexts and how they may depend on each other. Enforced by
 | Identity & Access | `identity`, `cases` | User; Case (+ memberships) — `users`, `cases`, `case_memberships` | everything case-scoped |
 | Source Ingestion | `documents`, `processing` | Document (+ versions, pages, page reports, jobs) — `documents`, `document_versions`, `pages`, `page_reports`, `processing_jobs` | Retrieval |
 | Retrieval | `indexing`, `search` | Segment index — `text_segments`, `segment_embeddings` | Q&A (T3) |
-| Q&A (T3, planned) | `qa` | Answer, Citation | Investigation |
+| Q&A | `qa` (+ adapters in `llm`) | Answer (+ claims, citations), citation reports — `answers`, `answer_claims`, `citations`, `citation_reports` | Investigation |
 | Investigation (T4, planned) | `investigation` | Statement, Comparison, Finding, Lead, Annotation | Reporting |
 | Reporting (T5, planned) | `reports` | Report | — |
 
 Shared kernel / infrastructure (no domain logic of their own): `common`, `config`, `audit`, `storage`, `embeddings`.
 Adapters to external systems live behind ports: `ObjectStore` (S3/filesystem), `EmbeddingProvider` (TEI),
-`OcrEngine` (Tesseract) — anti-corruption layers; no vendor types leak past them.
+`OcrEngine` (Tesseract), `AnswerGenerator` (LLM; port in `qa`, adapters in `llm`) — anti-corruption layers; no vendor types leak past them.
 
 ## Relationships
 - Every context is **downstream of Identity & Access** via `CaseAccessService` (conformist: it uses `CaseRole`/`Permission` as-is).
 - Retrieval reads Ingestion's page texts and version records (customer/supplier). Retrieval must never write Ingestion tables.
-- Q&A will consume Retrieval through `SearchService`-style queries only, never through Retrieval tables.
+- Q&A consumes Retrieval through `SearchService` only, never through Retrieval tables. Citations **snapshot** the
+  segment (document, page, labels, quote, offsets) and keep `text_segment_id` without a foreign key, so answers
+  survive re-indexing.
 - Investigation references sources only through **segment IDs + page IDs** (published language), never by copying text without provenance.
 
 ## Allowed dependencies (mirror of the test)
@@ -35,6 +37,8 @@ documents               -> audit, cases, common, config, identity, indexing*, pr
 processing              -> common, config, documents*, embeddings, indexing*, storage
 indexing                -> documents*, embeddings, search*
 search                  -> cases, common, config, embeddings, identity
+qa                      -> audit, cases, common, config, identity, search
+llm                     -> config, qa
 ```
 `*` = known debt, below.
 

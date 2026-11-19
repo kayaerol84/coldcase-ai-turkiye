@@ -31,6 +31,10 @@ class ContextBoundariesTest {
         // KNOWN DEBT: indexing -> search only for TurkishText (belongs in a shared text module).
         "indexing" to setOf("documents", "embeddings", "search"),
         "search" to setOf("cases", "common", "config", "embeddings", "identity"),
+        // Q&A consumes Retrieval only through SearchService (and TurkishText for speaker matching), never its tables.
+        "qa" to setOf("audit", "cases", "common", "config", "identity", "search"),
+        // LLM adapters implement the qa.AnswerGenerator port.
+        "llm" to setOf("config", "qa"),
     )
 
     private val root: Path = Path.of("src/main/kotlin/tr/coldcase/api")

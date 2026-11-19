@@ -13,6 +13,8 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multi
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post
 import tr.coldcase.api.ApiTestBase
 import tr.coldcase.api.FakeEmbeddingProvider
+import tr.coldcase.api.ScriptedAnswerGenerator
+import tr.coldcase.api.qa.GenerationResult
 import tr.coldcase.api.TestPdfs
 import tr.coldcase.api.TestPdfs.TextPage
 import tr.coldcase.api.processing.DocumentProcessor
@@ -24,6 +26,7 @@ import java.util.UUID
 class LogLeakageTest : ApiTestBase() {
     @Autowired lateinit var processor: DocumentProcessor
     @Autowired lateinit var fake: FakeEmbeddingProvider
+    @Autowired lateinit var llm: ScriptedAnswerGenerator
 
     @Test
     fun `document text and queries are not logged`(output: CapturedOutput) {
@@ -52,6 +55,18 @@ class LogLeakageTest : ApiTestBase() {
         }
         mvc.perform(post("/api/v1/cases/$caseId/search").asUser(owner).contentType(MediaType.APPLICATION_JSON)
             .content(json(mapOf("query" to queryCanary.repeat(30)))))
+
+        // Q&A: the question, the passages sent to the model and its answer (success, refusal and failure paths).
+        val ask = { mvc.perform(post("/api/v1/cases/$caseId/questions").asUser(owner).contentType(MediaType.APPLICATION_JSON)
+            .content(json(mapOf("question" to "$queryCanary $docCanary nedir?")))) }
+        ask()
+        llm.script = { GenerationResult.Declined("test/scripted-1", "other") }
+        ask()
+        llm.script = { GenerationResult.Failed("PROVIDER_HTTP_500") }
+        ask()
+        llm.script = { GenerationResult.Completed("{\"broken $docCanary", "test/scripted-1", 1, 1) }
+        ask()
+        llm.reset()
 
         assertThat(output.all).doesNotContain(docCanary).doesNotContain(queryCanary)
     }

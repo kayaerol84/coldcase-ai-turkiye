@@ -22,7 +22,14 @@ these code paths, run its test; when you add a rule, add a row.
 | I15 | The served embedding model must match the configured model/revision | `TeiEmbeddingProvider.available` | `RetrievalUnitTest` |
 | I16 | Retrieval scores are diagnostics, not proof (TR §6.2) | UI copy + `Diagnostics` naming | — (review) |
 | I17 | Document text, queries and prompts are never logged (TR §14) | logging discipline | `security/LogLeakageTest` |
-| I18 | AI output is a draft until a human reviews it (BR §2.1) | T3+ | — |
+| I18 | AI output is a draft until a human reviews it (BR §2.1) | `answers.review_status` (only `AI_DRAFT` exists until T4), UI label | `QaApiTest` |
+| I22 | A citation names a passage retrieved for that question and quotes it verbatim (only whitespace may differ); otherwise it is dropped (TR §7.3) | `CitationValidator` | `CitationValidatorTest`, `QaApiTest` |
+| I23 | Every claim has ≥1 valid citation; with none left, the answer abstains (TR §6.3) | `CitationValidator`, `QaService` | `CitationValidatorTest`, `QaApiTest` |
+| I24 | Testimony is attributed to its speaker: a claim cited only from speaker passages is a `SOURCE_STATEMENT` by those speakers, whatever the model says | `CitationValidator.attribute` | `CitationValidatorTest`, `QaApiTest` |
+| I25 | Passage text is data: it is JSON-encoded inside delimiters it cannot close, and the prompt forbids following it | `QaPrompt.user` | `QaApiTest` (injection fixture) |
+| I26 | Case content goes to an LLM only through a provider accepted in ADR 0002; default `none` | `LlmConfig` | `QaApiTest` (unavailable → 503) |
+| I27 | Every answer records what produced it: retrieved passages, provider, actual model, prompt version | `QaService.ask`, `answers` jsonb | `QaApiTest` |
+| I28 | Citations survive re-indexing (snapshot, no FK to segments) | `V4__qa.sql` | `QaApiTest` |
 | I20 | Only tokens issued for audience `coldcase-api` by the configured issuer are accepted | `application.yml` (`audiences`), Keycloak audience mapper | `TokenValidationTest` |
 | I21 | Every API endpoint has a tested access rule | `AuthorizationMatrixTest` (endpoint discovery) | itself |
 | I19 | Test fixtures use fictional people; never attribute invented statements to real people | review | — (see conventions) |

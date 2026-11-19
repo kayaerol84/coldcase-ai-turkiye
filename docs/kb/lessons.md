@@ -38,3 +38,10 @@ Things that cost time once. Add to this list whenever something surprises you.
 - **Jackson 3 `JsonNode.map`** silently changed meaning in Kotlin (member beats extension); some calls still compiled
   with a different result type (`String` instead of `List`). Grep for `].map {` on JSON nodes when upgrading.
 - **Real people in fixtures:** early fixtures put invented quotes in real witnesses' mouths. Use fictional names.
+- **Anthropic Java SDK 3.x** sends the API key as `Authorization: Bearer`, not `x-api-key`; tests that stub the
+  Messages API should accept either. It also pulls in OkHttp 4 and Jackson 2 (`com.fasterxml`) alongside Jackson 3 —
+  keep vendor JSON types inside the `llm` adapter.
+- **PostgreSQL isn't started automatically** in a fresh agent container: `service postgresql start` before `./gradlew test`
+  (symptom: every Spring test fails with "Failed to load ApplicationContext").
+- **Structured outputs** reject `minLength`/`maxLength`/numeric limits and need `additionalProperties: false` on every
+  object; enforce lengths in code (`CitationValidator`) instead.

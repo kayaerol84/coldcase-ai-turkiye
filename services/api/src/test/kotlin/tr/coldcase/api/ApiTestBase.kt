@@ -35,6 +35,10 @@ abstract class ApiTestBase {
         @Bean
         @Primary
         fun fakeEmbeddings() = FakeEmbeddingProvider()
+
+        @Bean
+        @Primary
+        fun scriptedGenerator() = ScriptedAnswerGenerator()
     }
 
     @Autowired lateinit var mvc: MockMvc

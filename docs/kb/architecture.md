@@ -21,6 +21,8 @@ Monorepo. One deployable backend (modular monolith), one web app, local infra vi
 | `processing` | Job queue + worker: PDF inspection, per-page extraction, OCR (Tesseract), status derivation |
 | `indexing` | Chunker (page-bounded, speaker-aware), segment store, embedding at index time |
 | `search` | Hybrid search (FTS + vector + RRF), Turkish text folding, highlights |
+| `qa` | Source-grounded Q&A: prompt (`QaPrompt`), `CitationValidator`, answers/claims/citations, citation reports, `AnswerGenerator` port |
+| `llm` | `AnswerGenerator` adapters: `AnthropicAnswerGenerator` (official Java SDK); selected by `app.llm.provider` (default `none`) |
 | `embeddings` | Provider port + TEI adapter (self-hosted only) |
 | `storage` | Object store port (filesystem / S3) + verified original cache |
 | `audit` | Append-only audit log writer |
@@ -57,18 +59,32 @@ permission get **403**.
 - Fusion: reciprocal rank fusion (k=60) + bonus for quoted phrases; overlapping chunks deduplicated.
 - Falls back to keyword when embeddings are unavailable (`modeUsed`, `semanticAvailable` in the response).
 
+## Q&A (T3)
+`POST /api/v1/cases/{caseId}/questions` (Researcher+):
+1. Hybrid search in the case (≤12 passages, ids `P1…Pn`). None → abstain `NO_PASSAGES_FOUND` without calling the model.
+2. `AnswerGenerator.generate`: system prompt `QaPrompt.SYSTEM` (`qa-v1`), passages as a JSON array, structured JSON
+   output (`QaPrompt.SCHEMA`). Claude adapter: `claude-opus-5-5`, adaptive thinking, effort `high`, non-streaming,
+   no server-side fallbacks.
+3. `CitationValidator`: drop unknown passages, non-verbatim and too-short quotes, uncited claims, single-passage
+   conflicts; derive speaker attribution from the cited passages; add system limitations; abstain if nothing remains.
+4. Store answer + claims + citation snapshots + retrieval/generator/validation records; audit `ANSWER_CREATED` (ids/counts only).
+Refusal → stored abstention `MODEL_DECLINED`. Transport error / truncation / invalid JSON → `503 QA_GENERATION_FAILED`, not stored.
+
 ## Data model (Flyway: `services/api/src/main/resources/db/migration/`)
 `V1__foundation.sql` users, cases, case_memberships, audit_events (append-only trigger) ·
 `V2__documents_and_processing.sql` documents, document_versions, pages, processing_jobs ·
-`V3__retrieval.sql` text_segments (+tsvector, trigram), segment_embeddings, page_reports, `coldcase_fold()`.
+`V3__retrieval.sql` text_segments (+tsvector, trigram), segment_embeddings, page_reports, `coldcase_fold()` ·
+`V4__qa.sql` answers, answer_claims, citations (generic target, snapshot of the source), citation_reports.
 
 ## Endpoints (all under `/api/v1`, all authenticated)
 `me` · `cases` (CRUD, `members`) · `cases/{id}/documents` (upload, list) · `documents/{id}` (get, `pages`,
-`pages/{n}`, `pages/{n}/image`, `pages/{n}/reports`, `reports`, `file`, `reprocess`) · `cases/{id}/search`.
+`pages/{n}`, `pages/{n}/image`, `pages/{n}/reports`, `reports`, `file`, `reprocess`) · `cases/{id}/search` ·
+`cases/{id}/questions` (ask), `cases/{id}/answers` (history), `answers/{id}`, `answers/{id}/citations/{cid}/reports` ·
+`qa/status`.
 Actuator (`health`, `prometheus`) only on the internal management port 8081. OpenAPI (`/api/openapi`) requires
 login unless `PUBLIC_API_DOCS=true`.
 
 ## Web (`apps/web/src/app/`)
-`/` cases · `/cases/[caseId]` case + documents + members · `/cases/[caseId]/search` ·
+`/` cases · `/cases/[caseId]` case + documents + members · `/cases/[caseId]/search` · `/cases/[caseId]/ask` (Q&A) ·
 `/documents/[documentId]` pages table · `/documents/[documentId]/pages/[pageNumber]` viewer ·
 `/auth/callback`. API client and Turkish labels in `apps/web/src/lib/api.ts`.

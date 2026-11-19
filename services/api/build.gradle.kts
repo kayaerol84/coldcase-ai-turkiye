@@ -33,6 +33,8 @@ dependencies {
     }
     implementation("software.amazon.awssdk:apache-client")
     implementation("io.micrometer:micrometer-registry-prometheus")
+    // Answer generation (T3) through the official Anthropic SDK; only active when app.llm.provider=anthropic (ADR 0002).
+    implementation("com.anthropic:anthropic-java:3.4.0")
     runtimeOnly("org.postgresql:postgresql")
 
     testImplementation("org.springframework.boot:spring-boot-starter-test")

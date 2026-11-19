@@ -111,3 +111,14 @@ mark { background: color-mix(in srgb, var(--accent) 30%, transparent); color: va
 a.btn { text-decoration: none; display: inline-block; }
 .viewer-head .h1 { margin: 0; }
 @media (max-width: 900px) { .viewer { grid-template-columns: 1fr; } }
+
+/* Q&A answers */
+.btn.small { font-size: 12px; padding: 2px 8px; }
+.claims { padding-left: 20px; }
+.claim { margin-bottom: 16px; }
+.claim > p { margin: 0 0 6px; line-height: 1.6; }
+.citations { list-style: none; padding: 0 0 0 12px; border-left: 2px solid var(--border); }
+.citation { margin-bottom: 10px; }
+.citation blockquote { margin: 0 0 4px; font-size: 14px; }
+.history { padding-left: 18px; }
+.history li { margin-bottom: 6px; }

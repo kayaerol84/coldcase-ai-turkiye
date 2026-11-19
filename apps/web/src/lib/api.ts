@@ -94,6 +94,10 @@ const codeMessages: Record<string, string> = {
   INVALID_PAGES: "Geçersiz sayfa numarası.",
   EMPTY_QUERY: "Arama ifadesi boş.",
   QUERY_TOO_LONG: "Arama ifadesi çok uzun.",
+  EMPTY_QUESTION: "Soru boş.",
+  QUESTION_TOO_LONG: "Soru çok uzun (en fazla 500 karakter).",
+  QA_UNAVAILABLE: "Soru-cevap bu kurulumda etkin değil. Belgelerde aramayı kullanabilirsiniz.",
+  QA_GENERATION_FAILED: "Yanıt şu anda oluşturulamadı. Biraz sonra tekrar deneyin.",
   INTEGRITY_CHECK_FAILED: "Saklanan dosya kayıtlı SHA-256 özetiyle eşleşmiyor; sayfa gösterilemiyor.",
 };
 
@@ -133,6 +137,10 @@ export const pageStatusLabels: Record<PageStatus, { tr: string; tone: Tone }> = 
 export const statusDetailLabels: Record<string, string> = {
   OCR_UNAVAILABLE: "OCR motoru kurulu değil; taranmış sayfalar okunamadı.",
   OCR_FAILED: "Bazı sayfalarda OCR başarısız oldu.",
+  EMPTY_QUESTION: "Soru boş.",
+  QUESTION_TOO_LONG: "Soru çok uzun (en fazla 500 karakter).",
+  QA_UNAVAILABLE: "Soru-cevap bu kurulumda etkin değil. Belgelerde aramayı kullanabilirsiniz.",
+  QA_GENERATION_FAILED: "Yanıt şu anda oluşturulamadı. Biraz sonra tekrar deneyin.",
   INTEGRITY_CHECK_FAILED: "Bütünlük doğrulaması başarısız: saklanan dosya kayıtlı SHA-256 özetiyle eşleşmiyor.",
   PDF_UNREADABLE: "PDF işlenirken okunamadı.",
   PAGES_NEED_REVIEW: "Bazı sayfalar inceleme gerektiriyor.",
@@ -275,6 +283,86 @@ export type PageReport = {
   createdAt: string;
 };
 
+export type AnswerOutcome = "ANSWERED" | "ABSTAINED";
+export type AbstainReason = "NO_PASSAGES_FOUND" | "INSUFFICIENT_EVIDENCE" | "NO_VERIFIABLE_CLAIMS" | "MODEL_DECLINED";
+export type ClaimKind = "SOURCE_STATEMENT" | "DOCUMENTED_FACT";
+export type CitationReportKind = "DOES_NOT_SUPPORT_CLAIM" | "QUOTE_MISREPRESENTED" | "WRONG_PAGE" | "OTHER";
+
+export const abstainReasonLabels: Record<AbstainReason, string> = {
+  NO_PASSAGES_FOUND: "Dosyada bu soruyla ilgili pasaj bulunamadı.",
+  INSUFFICIENT_EVIDENCE: "Bulunan pasajlar bu soruyu yanıtlamak için yeterli değil.",
+  NO_VERIFIABLE_CLAIMS: "Önerilen ifadelerin hiçbiri kaynak metinde doğrulanamadı; bu yüzden yanıt verilmedi.",
+  MODEL_DECLINED: "Model bu soruyu yanıtlamayı reddetti.",
+};
+
+export const claimKindLabels: Record<ClaimKind, string> = {
+  SOURCE_STATEMENT: "Kaynak beyanı",
+  DOCUMENTED_FACT: "Belgede kayıtlı",
+};
+
+export const citationReportKindLabels: Record<CitationReportKind, string> = {
+  DOES_NOT_SUPPORT_CLAIM: "Alıntı ifadeyi desteklemiyor",
+  QUOTE_MISREPRESENTED: "Alıntı bağlamından koparılmış",
+  WRONG_PAGE: "Yanlış sayfa",
+  OTHER: "Diğer",
+};
+
+/** System limitation codes from the API; MODEL_NOTE carries free text instead. */
+export const limitationLabels: Record<string, string> = {
+  CLAIMS_REMOVED_UNVERIFIABLE: "Kaynakta doğrulanamayan ifadeler yanıttan çıkarıldı",
+  CITES_OCR_TEXT: "Bazı alıntılar OCR metninden; tanıma hataları olabilir, sayfa görüntüsüyle karşılaştırın",
+  SPEAKER_INFERRED_FROM_PREVIOUS_PAGE: "Bazı konuşmacılar önceki sayfadan çıkarıldı",
+};
+
+export type Citation = {
+  id: string;
+  segmentId: string;
+  documentId: string;
+  documentTitle: string;
+  pageId: string;
+  pdfPageNumber: number;
+  printedPageLabel?: string;
+  sourceKind: "EMBEDDED_TEXT" | "OCR";
+  speaker?: string;
+  quote: string;
+  quoteStart: number;
+  quoteEnd: number;
+  reportCount: number;
+};
+
+export type Claim = { id: string; position: number; text: string; kind: ClaimKind; speaker?: string; citations: Citation[] };
+
+export type PassageRef = { segmentId: string; documentId: string; documentTitle: string; pdfPageNumber: number; printedPageLabel?: string };
+
+export type Answer = {
+  id: string;
+  caseId: string;
+  question: string;
+  outcome: AnswerOutcome;
+  abstainReason?: AbstainReason;
+  reviewStatus: "AI_DRAFT";
+  claims: Claim[];
+  limitations: { source: "MODEL" | "SYSTEM"; code: string; text?: string; count?: number }[];
+  conflicts: { description: string; passages: PassageRef[] }[];
+  suggestedLead?: string;
+  generator: { provider?: string; model?: string; promptVersion?: string; [k: string]: unknown };
+  validation: { claimsProposed?: number; claimsKept?: number; citationsProposed?: number; citationsKept?: number; [k: string]: unknown };
+  retrievedPassages: number;
+  askedBy: { id: string; displayName?: string };
+  createdAt: string;
+};
+
+export type AnswerSummary = {
+  id: string;
+  question: string;
+  outcome: AnswerOutcome;
+  abstainReason?: AbstainReason;
+  reviewStatus: "AI_DRAFT";
+  claimCount: number;
+  askedBy: { id: string; displayName?: string };
+  createdAt: string;
+};
+
 export type UploadInput = { file: File; title?: string; sourceName?: string; sourceDate?: string };
 
 export const api = {
@@ -311,6 +399,13 @@ export const api = {
   reportPage: (id: string, n: number, kind: PageReportKind, note?: string) =>
     request<PageReport>("POST", `/api/v1/documents/${id}/pages/${n}/reports`, { kind, note }),
   listReports: (id: string) => request<PageReport[]>("GET", `/api/v1/documents/${id}/reports`),
+  qaStatus: () => request<{ available: boolean }>("GET", "/api/v1/qa/status"),
+  ask: (caseId: string, question: string, filters?: SearchFilters) =>
+    request<Answer>("POST", `/api/v1/cases/${caseId}/questions`, { question, filters }),
+  listAnswers: (caseId: string) => request<AnswerSummary[]>("GET", `/api/v1/cases/${caseId}/answers`),
+  getAnswer: (id: string) => request<Answer>("GET", `/api/v1/answers/${id}`),
+  reportCitation: (answerId: string, citationId: string, kind: CitationReportKind, note?: string) =>
+    request<unknown>("POST", `/api/v1/answers/${answerId}/citations/${citationId}/reports`, { kind, note }),
   /** Fetches the original with the bearer token and returns a blob URL (the API is not cookie-authenticated). */
   originalFileUrl: async (id: string, inline: boolean) => {
     const res = await send("GET", `/api/v1/documents/${id}/file?disposition=${inline ? "inline" : "attachment"}`);
