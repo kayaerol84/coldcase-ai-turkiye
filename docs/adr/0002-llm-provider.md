@@ -1,6 +1,7 @@
 # ADR 0002 — Language model provider for source-grounded Q&A (T3)
 
-**Status:** Proposed — awaiting the product owner. Until accepted, `app.llm.provider=none` (Q&A switched off).
+**Status:** Accepted 2026-11-19 for the public demo corpus (option A). Private case material: not decided — Q&A must stay
+`none` in any environment holding non-public documents until B or C is accepted.
 **Date:** 2026-11-19
 
 ## Context
@@ -50,8 +51,11 @@ Whatever is chosen:
 
 ## Decision
 
-_Pending._ Product owner to choose: (A) for the public demo now, and B/C for private material later — or a different
-combination.
+Accepted by the product owner on 2026-11-19:
+- **Demo environment (public TBMM transcripts only): option A**, Claude via the Anthropic API, `LLM_PROVIDER=anthropic`.
+- **Any environment with non-public material: undecided.** `LLM_PROVIDER` stays `none` there (the code default) until
+  option B or C is accepted in an update to this ADR. Uploading private documents to the demo environment is not allowed
+  while Q&A is enabled there.
 
 ## Consequences
 

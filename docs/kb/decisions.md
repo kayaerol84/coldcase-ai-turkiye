@@ -4,9 +4,10 @@ Architectural decisions get an ADR in `docs/adr/`. Smaller ones are logged here 
 
 ## ADRs
 - `docs/adr/0001-embedding-model.md` — Accepted: self-hosted embeddings only, BAAI/bge-m3 default, bake-off pending.
-- `docs/adr/0002-llm-provider.md` — Proposed: LLM for Q&A (Anthropic API for the public demo; EU-region cloud or self-hosted for private material). Q&A off until accepted.
+- `docs/adr/0002-llm-provider.md` — Accepted for the public demo: Claude via the Anthropic API (option A). Private material: undecided; Q&A stays `none` there.
 
 ## Log
+- 2026-11-19 — ADR 0002 option A accepted for the demo environment (public corpus only).
 - 2026-11-19 — Q&A answers and AI drafts need RESEARCH_WRITE (Researcher+); Viewers will see reviewed findings in T4.
 - 2026-11-19 — Citations are snapshots (no FK to `text_segments`) so answers survive re-indexing.
 - 2026-11-19 — Claude via the official Java SDK, non-streaming, structured output, effort `high`; server-side model fallbacks off (provenance).

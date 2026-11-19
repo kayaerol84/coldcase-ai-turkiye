@@ -9,13 +9,14 @@ _Last updated: 2026-11-19 (T3 source-grounded Q&A)_
 | T2 Retrieval & viewer | Done* | *Real bge-m3 never run here (no model download); bake-off pending |
 | Spring Boot 4 migration | Done | Boot 4.1.2, Spring 7.0.10, Security 7.1, Jackson 3, Kotlin 2.3.21; no accepted CVEs left |
 | Security pipeline | Done (first pass) | gitleaks, Trivy + npm audit, 13 security tests, web headers; see `security.md` |
-| T3 Source-grounded Q&A | Done* | *Switched off until ADR 0002 (LLM provider) is accepted; tested with a scripted model only, never against a real model or the real PDF |
+| T3 Source-grounded Q&A | Done* | *ADR 0002 option A accepted for the demo (public corpus); default stays `none`. Tested with a scripted model only, never yet against the real model or the real PDF |
 | T4 Investigation workflow | Planned | Statements, comparisons, findings, leads |
 | T5 Reporting & audit UI | Planned | |
 | T6 Pilot hardening | Planned | MFA, rate limiting, malware scan, image scanning, load tests |
 
 ## Waiting on the product owner
-- Decide ADR 0002 (LLM provider) and, if Anthropic, provide `ANTHROPIC_API_KEY` for the demo environment.
+- Set `LLM_PROVIDER=anthropic` and `ANTHROPIC_API_KEY` in the demo environment (ADR 0002 option A accepted).
+- Before any private case material: decide ADR 0002 option B or C.
 - Install the Renovate GitHub App on the repository (config is in `renovate.json`); Issues must be enabled for the Dependency Dashboard.
 - The TBMM Volume 2 PDF (T1 validation, eval questions, embedding bake-off).
 - Pinned bge-m3 revision (`EMBEDDINGS_MODEL_REVISION`) for shared environments.

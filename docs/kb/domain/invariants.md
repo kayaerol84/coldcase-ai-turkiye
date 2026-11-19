@@ -27,7 +27,7 @@ these code paths, run its test; when you add a rule, add a row.
 | I23 | Every claim has ≥1 valid citation; with none left, the answer abstains (TR §6.3) | `CitationValidator`, `QaService` | `CitationValidatorTest`, `QaApiTest` |
 | I24 | Testimony is attributed to its speaker: a claim cited only from speaker passages is a `SOURCE_STATEMENT` by those speakers, whatever the model says | `CitationValidator.attribute` | `CitationValidatorTest`, `QaApiTest` |
 | I25 | Passage text is data: it is JSON-encoded inside delimiters it cannot close, and the prompt forbids following it | `QaPrompt.user` | `QaApiTest` (injection fixture) |
-| I26 | Case content goes to an LLM only through a provider accepted in ADR 0002; default `none` | `LlmConfig` | `QaApiTest` (unavailable → 503) |
+| I26 | Case content goes to an LLM only through a provider accepted in ADR 0002 for that environment (Anthropic: public demo corpus only); default `none` | `LlmConfig` | `QaApiTest` (unavailable → 503) |
 | I27 | Every answer records what produced it: retrieved passages, provider, actual model, prompt version | `QaService.ask`, `answers` jsonb | `QaApiTest` |
 | I28 | Citations survive re-indexing (snapshot, no FK to segments) | `V4__qa.sql` | `QaApiTest` |
 | I20 | Only tokens issued for audience `coldcase-api` by the configured issuer are accepted | `application.yml` (`audiences`), Keycloak audience mapper | `TokenValidationTest` |

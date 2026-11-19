@@ -112,8 +112,8 @@ database administrator may need to run `CREATE EXTENSION vector;` once before mi
 
 `/cases/{id}/ask` drafts answers from the case's documents, with verbatim citations that are checked against the
 retrieved passages. It is **off by default** (`LLM_PROVIDER=none`): the question and the retrieved passages would
-be sent to a language model provider, and that needs `docs/adr/0002-llm-provider.md` to be accepted first.
-With an accepted provider and only for public material such as the TBMM demo corpus:
+be sent to a language model provider. `docs/adr/0002-llm-provider.md` accepts the Anthropic API for the public demo
+corpus (TBMM transcripts) only; keep it off wherever non-public documents are stored. For the demo:
 
 ```bash
 LLM_PROVIDER=anthropic ANTHROPIC_API_KEY=… ./gradlew bootRun
