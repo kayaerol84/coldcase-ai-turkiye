@@ -123,6 +123,7 @@ class AuthorizationMatrixTest : ApiTestBase() {
             request(HttpMethod.POST, "/api/v1/cases/$caseId/questions").asUser(owner).contentType(MediaType.APPLICATION_JSON)
                 .content(json(mapOf("question" to "Tanık ifadesi ne diyor?")))
         ).andReturn().response.contentAsString)
+        assertThat(answer.path("claims").path(0).path("citations").path(0).has("id")).describedAs("setup answer: %s", answer).isTrue()
         val ctx = Ctx(caseId, doc["id"].asText(), victim, victimId, answer["id"].asText(), answer["claims"][0]["citations"][0]["id"].asText())
 
         val failures = mutableListOf<String>()
