@@ -64,4 +64,9 @@ val securityTest by tasks.registering(Test::class) {
     shouldRunAfter(tasks.test)
 }
 
+tasks.withType<Test>().configureEach {
+    // Show assertion messages in CI logs, not only in the HTML report.
+    testLogging { exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL; events("failed") }
+}
+
 tasks.check { dependsOn(securityTest) }

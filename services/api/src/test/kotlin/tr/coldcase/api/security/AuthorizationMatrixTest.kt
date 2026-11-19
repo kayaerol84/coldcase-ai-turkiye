@@ -114,7 +114,7 @@ class AuthorizationMatrixTest : ApiTestBase() {
 
         val upload = mvc.perform(
             multipart("/api/v1/cases/$caseId/documents")
-                .file(MockMultipartFile("file", "t.pdf", "application/pdf", TestPdfs.build(listOf(TextPage(listOf("Kurgusal bir tanık ifadesi.")))))).asUser(owner)
+                .file(MockMultipartFile("file", "t.pdf", "application/pdf", TestPdfs.build(listOf(TextPage(listOf("BAŞKAN — Kurgusal bir tanık ifadesi tutanağa geçmiştir.")))))).asUser(owner)
         ).andReturn()
         val doc = readJson(upload.response.contentAsString)
         processor.drain(UUID.fromString(doc["file"]["versionId"].asText()))

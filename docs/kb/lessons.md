@@ -45,3 +45,6 @@ Things that cost time once. Add to this list whenever something surprises you.
   (symptom: every Spring test fails with "Failed to load ApplicationContext").
 - **Structured outputs** reject `minLength`/`maxLength`/numeric limits and need `additionalProperties: false` on every
   object; enforce lengths in code (`CitationValidator`) instead.
+- **Short fixture pages go to OCR:** a page with fewer than 25 non-whitespace characters (`app.extraction.min-text-chars`)
+  is sent to Tesseract. The Security workflow has no Tesseract, so such a page fails there and has no segments, while
+  it passes locally. Give fixtures that need searchable text a full sentence; reproduce with `TESSERACT_CMD=/nonexistent`.
